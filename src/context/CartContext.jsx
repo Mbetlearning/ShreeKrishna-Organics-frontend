@@ -123,7 +123,7 @@ export function CartProvider({ children }) {
   const applyCoupon = (code) => {
     const cleanCode = (code || '').trim().toUpperCase();
 
-    if (cleanCode === 'SHRIKRISHNA10' || cleanCode === 'PRAKRITI10' || cleanCode === 'ORGANIC10') {
+    if (cleanCode === 'SHREEKRISHNA10' || cleanCode === 'SHRIKRISHNA10' || cleanCode === 'PRAKRITI10' || cleanCode === 'ORGANIC10') {
       const coupon = { code: cleanCode, discountPercent: 10, description: '10% Welcome Discount' };
       setAppliedCoupon(coupon);
       addToast(`🎉 Coupon "${cleanCode}" applied! You saved 10%`);
@@ -134,7 +134,7 @@ export function CartProvider({ children }) {
       addToast(`🎉 Coupon "${cleanCode}" applied! You saved 15%`);
       return { success: true, message: 'Coupon applied successfully!' };
     } else {
-      addToast('Invalid coupon code. Try SHRIKRISHNA10 or PUREOIL', 'error');
+      addToast('Invalid coupon code. Try SHREEKRISHNA10 or PUREOIL', 'error');
       return { success: false, message: 'Invalid coupon code.' };
     }
   };

@@ -43,7 +43,7 @@ export default function RazorpayModal({
               </div>
               <div>
                 <h3 className="font-semibold text-base leading-tight">Razorpay Secure Checkout</h3>
-                <p className="text-xs text-blue-200">Shrikrishna Organics Pvt Ltd</p>
+                <p className="text-xs text-blue-200">ShreeKrishna Organics Pvt Ltd</p>
               </div>
             </div>
             <button

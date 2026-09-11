@@ -86,7 +86,7 @@ const INITIAL_DEMO_ORDERS = [
     items: [
       {
         id: 9,
-        name: "Shrikrishna Heritage Trio (Mustard + Coconut + Groundnut)",
+        name: "ShreeKrishna Heritage Trio (Mustard + Coconut + Groundnut)",
         size: "3 x 1 Litre Bottles",
         price: 1149,
         quantity: 1,

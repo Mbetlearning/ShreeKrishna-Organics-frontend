@@ -1,5 +1,5 @@
 /**
- * CENTRAL PRODUCT CATALOG (DEMO DATA) - SHRIKRISHNA ORGANICS
+ * CENTRAL PRODUCT CATALOG (DEMO DATA) - SHREEKRISHNA ORGANICS
  * 
  * Sourced directly from certified organic farmer collectives across Bharat.
  * Categories match the wireframe: Oils, Jaggery, Health Supplements, Other Products & Combos.
@@ -127,7 +127,7 @@ export const products = [
     categoryName: "Health Supplements",
     tagline: "Hand-churned from curd of grass-fed Gir cows using wooden bilona",
     shortDescription: "Golden, granular, and aromatic traditional A2 ghee prepared strictly via ancient Vedic 5-step sanskar. Rich in butyric acid, Vitamin A, D, E & K2.",
-    description: "Shrikrishna Organics Vedic A2 Ghee is prepared from whole curd of pure-bred indigenous Gir cows roaming freely in natural pastures. The curd is hand-churned in two-way wooden bilonas to extract pure makkhan, then slow-simmered over low firewood to yield divine golden granular ghee with unforgettable aroma.",
+    description: "ShreeKrishna Organics Vedic A2 Ghee is prepared from whole curd of pure-bred indigenous Gir cows roaming freely in natural pastures. The curd is hand-churned in two-way wooden bilonas to extract pure makkhan, then slow-simmered over low firewood to yield divine golden granular ghee with unforgettable aroma.",
     price: 980,
     originalPrice: 1150,
     discountPercentage: 15,
@@ -374,7 +374,7 @@ export const products = [
     categoryName: "Health Supplements",
     tagline: "Unheated, unpasteurized honey harvested from deep tribal forest reserves",
     shortDescription: "Pure raw honey collected by indigenous forest tribes from wild bee hives. Rich in live floral enzymes, pollen, and natural propolis.",
-    description: "Shrikrishna Organics Wild Forest Honey is 100% unprocessed and cold-filtered. Never heated above hive temperature, it retains all its natural enzymes (amylase, invertase), antimicrobial defensin proteins, and complex wildflower aromas.",
+    description: "ShreeKrishna Organics Wild Forest Honey is 100% unprocessed and cold-filtered. Never heated above hive temperature, it retains all its natural enzymes (amylase, invertase), antimicrobial defensin proteins, and complex wildflower aromas.",
     price: 520,
     originalPrice: 620,
     discountPercentage: 16,
@@ -411,8 +411,8 @@ export const products = [
   },
   {
     id: 9,
-    slug: "shrikrishna-heritage-trio-oil-combo",
-    name: "Shrikrishna Heritage Trio (Mustard + Coconut + Groundnut)",
+    slug: "shreekrishna-heritage-trio-oil-combo",
+    name: "ShreeKrishna Heritage Trio (Mustard + Coconut + Groundnut)",
     category: "other",
     categoryName: "Other Products",
     tagline: "The complete traditional Indian kitchen starter bundle",

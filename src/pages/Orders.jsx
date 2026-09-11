@@ -62,7 +62,7 @@ export default function Orders() {
           No Previous Orders Found
         </h2>
         <p className="text-sm text-stone-500 max-w-md mt-2 mb-8 font-sans">
-          You haven't placed any orders with Shrikrishna Organics yet. Try our unrefined wood-pressed oils and organic essentials today.
+          You haven't placed any orders with ShreeKrishna Organics yet. Try our unrefined wood-pressed oils and organic essentials today.
         </p>
         <Button to="/shop" variant="primary" size="lg" icon={ArrowRight} iconPosition="right">
           Explore Our Products

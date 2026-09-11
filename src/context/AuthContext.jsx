@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await authService.register(userData);
       setUser(response.user);
-      addToast(`Welcome to Shrikrishna Organics, ${response.user.name.split(' ')[0]}!`);
+      addToast(`Welcome to ShreeKrishna Organics, ${response.user.name.split(' ')[0]}!`);
       return { success: true, user: response.user };
     } catch (error) {
       addToast(error.message || 'Registration failed', 'error');

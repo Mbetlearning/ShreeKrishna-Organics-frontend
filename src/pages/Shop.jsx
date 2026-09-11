@@ -93,7 +93,7 @@ export default function Shop() {
             100% Certified Organic & Unrefined
           </span>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#2B241D]">
-            Shrikrishna Organics Collection
+            ShreeKrishna Organics Collection
           </h1>
           <p className="mt-2 text-sm text-stone-600 font-sans">
             Handcrafted wood-pressed cooking oils, natural palm & sugarcane jaggery, and Vedic A2 Gir cow ghee.

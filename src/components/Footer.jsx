@@ -13,7 +13,7 @@ export default function Footer() {
     e.preventDefault();
     if (email && email.includes('@')) {
       setSubscribed(true);
-      addToast('Thank you for subscribing to Shrikrishna Organics newsletter!');
+      addToast('Thank you for subscribing to ShreeKrishna Organics newsletter!');
       setEmail('');
     }
   };
@@ -79,7 +79,7 @@ export default function Footer() {
                 </div>
                 <div className="flex flex-col">
                   <span className="font-serif font-bold text-xl tracking-wider text-stone-100">
-                    SHRIKRISHNA ORGANICS
+                    SHREEKRISHNA ORGANICS
                   </span>
                   <span className="text-[10px] tracking-[0.2em] text-[#B5563C] font-semibold uppercase">
                     Pure Tradition, Naturally
@@ -96,7 +96,7 @@ export default function Footer() {
                 <div className="flex items-start gap-2.5">
                   <MapPin className="w-4 h-4 text-[#B5563C] shrink-0 mt-0.5" />
                   <span>
-                    <strong>Shrikrishna Organics Pvt Ltd</strong><br />
+                    <strong>ShreeKrishna Organics Pvt Ltd</strong><br />
                     Karad<br />
                     Karad,Maharashtra-415110
                   </span>
@@ -107,7 +107,7 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Mail className="w-4 h-4 text-[#B5563C] shrink-0" />
-                  <span>care@shrikrishnaorganics.com</span>
+                  <span>care@shreekrishnaorganics.com</span>
                 </div>
               </div>
             </div>
@@ -235,7 +235,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-400">
-          <p>© 2026 Shrikrishna Organics Pvt Ltd. Pure Tradition, Naturally.</p>
+          <p>© 2026 ShreeKrishna Organics Pvt Ltd. Pure Tradition, Naturally.</p>
           <div className="flex items-center gap-3 text-[11px]">
             <span>FSSAI Lic. No: 10020042000123</span>
             <span>•</span>
@@ -263,7 +263,7 @@ export default function Footer() {
                 <HelpCircle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-xl text-[#2B241D]">Shrikrishna Help Desk</h3>
+                <h3 className="font-serif font-bold text-xl text-[#2B241D]">ShreeKrishna Help Desk</h3>
                 <p className="text-xs text-stone-500">Fast assistance for all your queries</p>
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function Footer() {
                 <h4 className="font-bold text-sm text-[#2B241D] flex items-center gap-2">
                   <Mail className="w-4 h-4 text-[#B5563C]" /> Email Customer Care
                 </h4>
-                <p className="mt-1 text-stone-600">Write to <strong>care@shrikrishnaorganics.com</strong> for bulk orders or test reports. Replies within 12h.</p>
+                <p className="mt-1 text-stone-600">Write to <strong>care@shreekrishnaorganics.com</strong> for bulk orders or test reports. Replies within 12h.</p>
               </div>
             </div>
 

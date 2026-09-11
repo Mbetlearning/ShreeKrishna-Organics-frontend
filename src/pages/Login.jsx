@@ -41,7 +41,7 @@ export default function Login() {
             Welcome Back
           </h1>
           <p className="text-xs text-stone-500 font-sans">
-            Sign in to your Shrikrishna Organics account to track orders & view purchases.
+            Sign in to your ShreeKrishna Organics account to track orders & view purchases.
           </p>
         </div>
 

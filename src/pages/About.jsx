@@ -21,7 +21,7 @@ export default function About() {
             Reviving the lost art of honest, traditional wood-pressing.
           </h1>
           <p className="mt-4 text-base sm:text-lg text-stone-600 font-sans leading-relaxed">
-            Before industrial chemical refineries existed, every Indian village relied on the wooden *Ghani* or *Marachekku*. Shrikrishna Organics is bringing that uncompromised purity back to modern family kitchens.
+            Before industrial chemical refineries existed, every Indian village relied on the wooden *Ghani* or *Marachekku*. ShreeKrishna Organics is bringing that uncompromised purity back to modern family kitchens.
           </p>
         </div>
 
@@ -31,7 +31,7 @@ export default function About() {
             
             <div className="lg:col-span-6 space-y-4">
               <span className="text-xs font-bold uppercase tracking-wider text-[#B5563C]">
-                Why Shrikrishna Organics Exists
+                Why ShreeKrishna Organics Exists
               </span>
               <h2 className="text-3xl font-serif font-bold text-[#2B241D]">
                 What happened to our cooking oils?
@@ -43,7 +43,7 @@ export default function About() {
                 While this produces cheap, clear oil with infinite shelf life, it strips away natural tocopherols (Vitamin E), live plant sterols, and the rich culinary aromas that defined traditional Indian gastronomy.
               </p>
               <p className="text-sm text-stone-800 font-semibold italic border-l-4 border-[#B5563C] pl-4 py-1">
-                "Shrikrishna Organics was founded on a simple conviction: what goes into your family's daily cooking should be real, unrefined, and honest."
+                "ShreeKrishna Organics was founded on a simple conviction: what goes into your family's daily cooking should be real, unrefined, and honest."
               </p>
             </div>
 
@@ -74,7 +74,7 @@ export default function About() {
                 <tr className="border-b-2 border-[#2B241D]">
                   <th className="py-4 px-4 font-serif font-bold text-stone-900 text-base">Key Parameter</th>
                   <th className="py-4 px-4 font-serif font-bold text-[#B5563C] text-base bg-[#FAF6EF] rounded-t-xl">
-                    🌿 Shrikrishna Wood-Pressed
+                    🌿 ShreeKrishna Wood-Pressed
                   </th>
                   <th className="py-4 px-4 font-serif font-bold text-stone-500 text-base">
                     ⚙️ Mass Refined Oil
@@ -180,7 +180,7 @@ export default function About() {
             Taste the authenticity in your next meal.
           </h2>
           <p className="text-sm text-stone-300 max-w-lg mx-auto mb-8">
-            Try our single-bottle selections or explore our bestseller Shrikrishna Heritage Trio combo pack.
+            Try our single-bottle selections or explore our bestseller ShreeKrishna Heritage Trio combo pack.
           </p>
           <Button to="/shop" variant="primary" size="lg" icon={ArrowRight} iconPosition="right">
             Explore All Products

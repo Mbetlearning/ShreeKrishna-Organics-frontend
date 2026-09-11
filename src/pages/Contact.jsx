@@ -14,8 +14,8 @@ import Button from '../components/Button';
 
 const FAQS = [
   {
-    q: "How are Shrikrishna Organics products different from supermarket oils?",
-    a: "Many commercial oils are mechanically extracted in high-speed steel screw presses where friction heats seeds past 65°C and solvent hexanes are used. At Shrikrishna Organics, we use authentic Vaagai wood mortars (Marachekku/Kolhu) rotating under 14 RPM to keep temperatures below 40°C."
+    q: "How are ShreeKrishna Organics products different from supermarket oils?",
+    a: "Many commercial oils are mechanically extracted in high-speed steel screw presses where friction heats seeds past 65°C and solvent hexanes are used. At ShreeKrishna Organics, we use authentic Vaagai wood mortars (Marachekku/Kolhu) rotating under 14 RPM to keep temperatures below 40°C."
   },
   {
     q: "What is the shelf life of unrefined wood-pressed oils and organic jaggery?",
@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "How can I get lab test reports for my batch?",
-    a: "Every bottle and pack features a batch QR code. You can also email our customer care team at care@shrikrishnaorganics.com with your order ID for certified NABL-accredited purity analysis."
+    a: "Every bottle and pack features a batch QR code. You can also email our customer care team at care@shreekrishnaorganics.com with your order ID for certified NABL-accredited purity analysis."
   }
 ];
 
@@ -46,7 +46,7 @@ export default function Contact() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsSent(true);
-    addToast('Thank you! Your message has been sent to Shrikrishna Organics customer care.');
+    addToast('Thank you! Your message has been sent to ShreeKrishna Organics customer care.');
     setFormData({ name: '', email: '', phone: '', subject: 'General Inquiry', message: '' });
     setTimeout(() => setIsSent(false), 4000);
   };
@@ -67,7 +67,7 @@ export default function Contact() {
             We're Here to Help
           </span>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#2B241D]">
-            Get in Touch with Shrikrishna Organics
+            Get in Touch with ShreeKrishna Organics
           </h1>
           <p className="mt-2 text-sm text-stone-600 font-sans">
             Have questions regarding our wood-pressing methods, Vedic ghee, bulk orders, or your delivery? Reach out to our dedicated support team.
@@ -103,7 +103,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">Email Inquiries</h4>
-                    <p className="text-sm font-semibold text-stone-900 mt-0.5">care@shrikrishnaorganics.com</p>
+                    <p className="text-sm font-semibold text-stone-900 mt-0.5">care@shreekrishnaorganics.com</p>
                     <p className="text-xs text-stone-500">Quick response within 12 business hours</p>
                   </div>
                 </div>
@@ -114,7 +114,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">Headquarters</h4>
-                    <p className="text-sm font-semibold text-stone-900 mt-0.5">Shrikrishna Organics Pvt Ltd</p>
+                    <p className="text-sm font-semibold text-stone-900 mt-0.5">ShreeKrishna Organics Pvt Ltd</p>
                     <p className="text-xs text-stone-500">Karad,Maharshtra-415110</p>
                   </div>
                 </div>

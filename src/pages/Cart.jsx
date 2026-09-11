@@ -236,7 +236,7 @@ export default function Cart() {
                   <div className="flex items-center bg-[#FAF6EF] rounded-2xl border border-[#E8DFD3] p-1 focus-within:border-[#B5563C]">
                     <input
                       type="text"
-                      placeholder="e.g. SHRIKRISHNA10"
+                      placeholder="e.g. SHREEKRISHNA10"
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value)}
                       className="w-full bg-transparent px-3 py-2 text-xs uppercase font-mono text-stone-800 placeholder-stone-400 focus:outline-none"
@@ -249,7 +249,7 @@ export default function Cart() {
                     </button>
                   </div>
                   <p className="text-[11px] text-stone-400">
-                    Use code <code className="font-mono text-stone-700 bg-stone-100 px-1 py-0.5 rounded">SHRIKRISHNA10</code> for 10% off.
+                    Use code <code className="font-mono text-stone-700 bg-stone-100 px-1 py-0.5 rounded">SHREEKRISHNA10</code> for 10% off.
                   </p>
                 </form>
               )}

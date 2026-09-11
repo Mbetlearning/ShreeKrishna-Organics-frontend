@@ -22,7 +22,7 @@ export const testimonials = [
     name: "Karthik Ranganathan",
     role: "Home Chef & Food Blogger, Bengaluru",
     rating: 5,
-    comment: "Shrikrishna Organics Black Sesame Gingelly oil with idli podi is an absolute match made in heaven. The subtle palm jaggery undertone rounds off the flavor perfectly. Highly recommended for daily cooking!",
+    comment: "ShreeKrishna Organics Black Sesame Gingelly oil with idli podi is an absolute match made in heaven. The subtle palm jaggery undertone rounds off the flavor perfectly. Highly recommended for daily cooking!",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     verified: true,
     product: "Wood-Pressed Black Sesame Oil"
@@ -35,7 +35,7 @@ export const testimonials = [
     comment: "We switched our entire household cooking to the Heritage Trio combo and Vedic A2 Ghee 4 months ago. The oils make the crispiest puris without smoking or breaking down. You can truly taste the organic purity.",
     avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
     verified: true,
-    product: "Shrikrishna Heritage Trio Combo"
+    product: "ShreeKrishna Heritage Trio Combo"
   }
 ];
 

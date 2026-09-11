@@ -456,13 +456,13 @@ export default function Home() {
       </section>
 
       {/* =========================================================================
-          4. WHY CHOOSE SHRIKRISHNA ORGANICS? (4-Item Benefits/USP Row per Wireframe)
+          4. WHY CHOOSE SHREEKRISHNA ORGANICS? (4-Item Benefits/USP Row per Wireframe)
       ========================================================================== */}
       <section className="py-20 bg-white border-b border-[#E8DFD3]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeader
             badge="Quality Standard"
-            title="Why Choose Shrikrishna Organics?"
+            title="Why Choose ShreeKrishna Organics?"
             subtitle="We adhere to rigorous ancient traditions that never compromise on honesty, nutrition, or purity."
           />
 
@@ -619,7 +619,7 @@ export default function Home() {
                 </div>
 
                 <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#2B241D] leading-tight">
-                  Shrikrishna Heritage Trio Oil Combo
+                  ShreeKrishna Heritage Trio Oil Combo
                 </h3>
 
                 <p className="mt-3 text-sm text-stone-600 leading-relaxed max-w-xl">
@@ -653,7 +653,7 @@ export default function Home() {
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                   <Button
-                    to="/product/shrikrishna-heritage-trio-oil-combo"
+                    to="/product/shreekrishna-heritage-trio-oil-combo"
                     variant="primary"
                     size="md"
                     className="w-full sm:w-auto font-bold"
@@ -765,7 +765,7 @@ export default function Home() {
           <SectionHeader
             badge="Verified Customers"
             title="Customer Reviews"
-            subtitle="Real experiences from home chefs, clinical nutritionists, and families cooking with Shrikrishna Organics."
+            subtitle="Real experiences from home chefs, clinical nutritionists, and families cooking with ShreeKrishna Organics."
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -840,7 +840,7 @@ export default function Home() {
                 Bring pure tradition into your family kitchen.
               </h2>
               <p className="text-sm sm:text-base text-stone-300">
-                Switch to authentic wood-pressed oils, pure palm jaggery, and Vedic A2 ghee. Free delivery on orders over ₹999. Use promo code <strong className="text-[#FAF6EF] bg-[#B5563C] px-2 py-0.5 rounded font-mono font-bold">SHRIKRISHNA10</strong> for 10% off your first order.
+                Switch to authentic wood-pressed oils, pure palm jaggery, and Vedic A2 ghee. Free delivery on orders over ₹999. Use promo code <strong className="text-[#FAF6EF] bg-[#B5563C] px-2 py-0.5 rounded font-mono font-bold">SHREEKRISHNA10</strong> for 10% off your first order.
               </p>
 
               <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -906,7 +906,7 @@ export default function Home() {
               </p>
 
               <div className="pt-4 flex justify-between items-center border-t border-[#E8DFD3]">
-                <span className="text-xs text-stone-500">Shrikrishna Organics Heritage Video Archive</span>
+                <span className="text-xs text-stone-500">ShreeKrishna Organics Heritage Video Archive</span>
                 <Button
                   to="/about"
                   onClick={() => setSelectedMedia(null)}

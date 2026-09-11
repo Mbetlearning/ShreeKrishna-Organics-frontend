@@ -57,7 +57,7 @@ export default function Register() {
             Create an Account
           </h1>
           <p className="text-xs text-stone-500 font-sans">
-            Join the Shrikrishna Organics community for unrefined wellness & pure heritage cooking.
+            Join the ShreeKrishna Organics community for unrefined wellness & pure heritage cooking.
           </p>
         </div>
 

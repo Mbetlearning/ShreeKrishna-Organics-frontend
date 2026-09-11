@@ -42,7 +42,7 @@ export default function Navbar() {
 
           <div className="flex-1 text-center sm:flex-none">
             <span>
-              🌿 Free Shipping on orders over <strong className="text-[#C68A2E]">₹999</strong> • Use code <span className="bg-[#2B241D] px-1.5 py-0.5 rounded font-mono font-bold text-[#FAF6EF] border border-[#B5563C]/50">SHRIKRISHNA10</span> for 10% Off
+              🌿 Free Shipping on orders over <strong className="text-[#C68A2E]">₹999</strong> • Use code <span className="bg-[#2B241D] px-1.5 py-0.5 rounded font-mono font-bold text-[#FAF6EF] border border-[#B5563C]/50">SHREEKRISHNA10</span> for 10% Off
             </span>
           </div>
 
@@ -72,14 +72,14 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Brand Logo Treatment - Shrikrishna Organics */}
+            {/* Brand Logo Treatment - ShreeKrishna Organics */}
             <Link to="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 rounded-2xl bg-[#2B241D] text-[#FAF6EF] flex items-center justify-center font-display font-bold text-lg shadow-xs group-hover:bg-[#B5563C] transition-all duration-300 border border-[#B5563C]/30">
                 SK
               </div>
               <div className="flex flex-col">
                 <span className="font-serif font-bold text-xl sm:text-2xl tracking-tight text-[#2B241D] leading-none">
-                  Shrikrishna
+                  ShreeKrishna Organics
                 </span>
                 <span className="text-[10px] tracking-[0.25em] text-[#B5563C] font-semibold uppercase mt-0.5">
                   Pure Tradition, Naturally
@@ -242,7 +242,7 @@ export default function Navbar() {
                   SK
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-serif font-bold text-base text-[#2B241D]">Shrikrishna</span>
+                  <span className="font-serif font-bold text-base text-[#2B241D]">ShreeKrishna</span>
                   <span className="text-[9px] tracking-wider text-[#B5563C] font-semibold uppercase">Organics</span>
                 </div>
               </div>
