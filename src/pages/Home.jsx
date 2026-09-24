@@ -1,928 +1,1551 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+
 import {
-  Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  Leaf,
-  Award,
-  CheckCircle2,
-  Star,
-  Layers,
   ChevronLeft,
   ChevronRight,
+  ShoppingCart,
+  Leaf,
+  ShieldCheck,
+  FlaskConical,
+  Tractor,
+  Star,
+  CheckCircle2,
   Play,
-  X
-} from 'lucide-react';
-import { productService } from '../services/productService';
-import { testimonials, brandStats } from '../data/testimonials';
-import ProductCard from '../components/ProductCard';
-import SectionHeader from '../components/SectionHeader';
-import Button from '../components/Button';
-import LoadingSpinner from '../components/LoadingSpinner';
+} from "lucide-react";
 
-// Hero Slideshow Data (4-5 Slides, ~10s per slide)
+import { productService } from "../services/productService";
+import ProductCard from "../components/ProductCard";
+import LoadingSpinner from "../components/LoadingSpinner";
+
+/* =========================================================
+   HERO SLIDES
+========================================================= */
+
 const HERO_SLIDES = [
   {
     id: 1,
-    badge: "100% Traditional Vaagai Wood-Pressed",
-    title: "Pure Oils.",
-    titleAccent: "Honest Origins.",
-    description: "Slow-crushed in authentic Vaagai wooden pestles under 40°C. Zero chemical refining, zero hexane solvents, and zero adulteration — just pure traditional wellness for your family.",
-    image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=1200&q=80",
-    featureTitle: "Vaagai Wooden Mortar Press",
-    featureDesc: "Slow cold extraction below 40°C",
-    ctaText: "Shop Pure Oils",
-    ctaLink: "/shop?category=wood-pressed"
+    image:
+      "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=1800&q=90",
+    smallTitle: "100% PURE & TRADITIONAL",
+    title: "Wood-Pressed Oils",
+    subtitle: "Purity You Can Taste",
+    description:
+      "Traditionally extracted at low temperature to preserve natural nutrition, aroma and authentic taste.",
+    button: "SHOP NOW",
+    link: "/shop?category=wood-pressed",
   },
+
   {
     id: 2,
-    badge: "Handcrafted Palmyra Sweetener",
-    title: "Organic Jaggery.",
-    titleAccent: "Unrefined Nutrition.",
-    description: "Natural Karupatti palm jaggery and Kolhapur sugarcane shakkar. Boiled in traditional brass vats without chemical bleaches or synthetic sulfur.",
-    image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&w=1200&q=80",
-    featureTitle: "Wild Palmyra Tapped",
-    featureDesc: "100% Sulfur-free & mineral rich",
-    ctaText: "Explore Jaggery",
-    ctaLink: "/shop?category=jaggery"
+    image:
+      "https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=1800&q=90",
+    smallTitle: "TRADITIONALLY PREPARED",
+    title: "Pure A2 Cow Ghee",
+    subtitle: "Golden Goodness For Your Family",
+    description:
+      "Made using traditional methods for rich aroma, authentic flavour and wholesome goodness.",
+    button: "EXPLORE GHEE",
+    link: "/shop?category=supplements",
   },
+
   {
     id: 3,
-    badge: "Ancient Vedic Bilona Sanskar",
-    title: "Vedic A2 Ghee.",
-    titleAccent: "Golden Purity.",
-    description: "Hand-churned from the whole curd of free-grazing indigenous Gir cows using two-way wooden bilonas. Fragrant, granular, and easily digestible.",
-    image: "https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=1200&q=80",
-    featureTitle: "Gir Cow Curd Churned",
-    featureDesc: "Traditional 5-step sanskar bilona",
-    ctaText: "Discover A2 Ghee",
-    ctaLink: "/shop?category=supplements"
+    image:
+      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=1800&q=90",
+    smallTitle: "FROM FARM TO YOUR HOME",
+    title: "Naturally Sourced",
+    subtitle: "Ingredients With Honest Origins",
+    description:
+      "Carefully selected ingredients sourced with a focus on purity, quality and traditional food practices.",
+    button: "OUR PRODUCTS",
+    link: "/shop",
   },
-  {
-    id: 4,
-    badge: "Fair-Trade Agriculture",
-    title: "Direct Sourcing.",
-    titleAccent: "350+ Farmer Families.",
-    description: "We bypass mandi middlemen to source native non-GMO seed varieties directly from organic grower collectives in Rajasthan, Gujarat, and Tamil Nadu.",
-    image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=1200&q=80",
-    featureTitle: "Fair Trade Certified",
-    featureDesc: "Native non-GMO heirloom crops",
-    ctaText: "Read Our Story",
-    ctaLink: "/about"
-  },
-  {
-    id: 5,
-    badge: "100% Lab Tested Transparency",
-    title: "Zero Solvents.",
-    titleAccent: "Lab Verified.",
-    description: "Every single batch is independently tested by NABL-accredited labs for iodine values, zero heavy metals, and complete freedom from adulteration.",
-    image: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?auto=format&fit=crop&w=1200&q=80",
-    featureTitle: "QR Verified Batches",
-    featureDesc: "100% FSSAI & NABL compliant",
-    ctaText: "View Products",
-    ctaLink: "/shop"
-  }
 ];
 
-// 4 Wireframe Category Items
+/* =========================================================
+   CATEGORIES
+========================================================= */
+
 const CATEGORIES = [
   {
-    id: "oils",
-    name: "Oils",
-    description: "Wood & Cold-Pressed",
-    icon: "🪵",
-    path: "/shop?category=wood-pressed",
-    image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "jaggery",
-    name: "Jaggery",
-    description: "Palm & Sugarcane",
-    icon: "",
-    path: "/shop?category=jaggery",
-    image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "supplements",
-    name: "Health Supplements",
-    description: "A2 Ghee & Forest Honey",
+    name: "All",
     icon: "🌿",
-    path: "/shop?category=supplements",
-    image: "https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=400&q=80"
+    link: "/shop",
   },
+
   {
-    id: "other",
-    name: "Other Products",
-    description: "Combos & Castor Oil",
-    icon: "🌾",
-    path: "/shop?category=other",
-    image: "https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&w=400&q=80"
-  }
+    name: "Oils",
+    icon: "💧",
+    link: "/shop?category=wood-pressed",
+  },
+
+  {
+    name: "Ghee",
+    icon: "🐄",
+    link: "/shop?category=supplements",
+  },
+
+  {
+    name: "Jaggery",
+    icon: "🟫",
+    link: "/shop?category=jaggery",
+  },
+
+  {
+    name: "Combos",
+    icon: "🎁",
+    link: "/shop?category=other",
+  },
+
+  {
+    name: "Wellness",
+    icon: "🌱",
+    link: "/shop",
+  },
 ];
 
-// Raw Material Media Items
-const MEDIA_ITEMS = [
+/* =========================================================
+   WHY CHOOSE
+========================================================= */
+
+const BENEFITS = [
   {
-    id: 1,
-    title: "Mustard Harvesting in Rajasthan",
-    subtitle: "Organic Farm Field Tour",
-    type: "Video Tour",
-    duration: "2:45 min",
-    thumbnail: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80",
-    description: "Witness our farmer partners harvesting first-grade non-GMO yellow mustard seeds in the arid plains of Rajasthan, sun-dried without chemical sulfur fumigation."
+    icon: Leaf,
+    title: "Native Sourcing",
+    text:
+      "Carefully selected raw materials sourced from trusted growing regions across India.",
   },
+
   {
-    id: 2,
-    title: "Vaagai Wood Mortar Churning",
-    subtitle: "Low RPM Cold Extraction",
-    type: "Process Video",
-    duration: "3:10 min",
-    thumbnail: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80",
-    description: "See authentic Albizia lebbeck (Vaagai) wood pestles slowly rotating under 14 RPM to extract unrefined golden oil below 40°C."
+    icon: Tractor,
+    title: "Traditional Processing",
+    text:
+      "Minimally processed using time-tested traditional methods for maximum natural goodness.",
   },
+
   {
-    id: 3,
-    title: "Traditional Palm Jaggery Boiling",
-    subtitle: "Artisan Karupatti Craft",
-    type: "Artisan Story",
-    duration: "4:05 min",
-    thumbnail: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&w=600&q=80",
-    description: "Step inside our Tuticorin palmyra grove where master tappers simmer fresh palm neera in iron cauldrons to form mineral-dense solid jaggery blocks."
+    icon: FlaskConical,
+    title: "Extensive Quality Checks",
+    text:
+      "Every product goes through careful quality checks before reaching your family.",
   },
+
   {
-    id: 4,
-    title: "Sun Resting & Cloth Filtration",
-    subtitle: "Zero Chemical Refining",
-    type: "Quality Check",
-    duration: "1:55 min",
-    thumbnail: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?auto=format&fit=crop&w=600&q=80",
-    description: "How our pure oils naturally rest for 48 hours for sedimentation before passing through a single cotton cloth filter without synthetic bleaching clays."
-  }
+    icon: ShieldCheck,
+    title: "Purity First",
+    text:
+      "Honest ingredients, traditional methods and uncompromised purity in every product.",
+  },
 ];
+
+/* =========================================================
+   NATIVE INGREDIENTS
+========================================================= */
+
+const INGREDIENTS = [
+  {
+    title: "From Native Geographies",
+    subtitle: "To Ideal Growing Seasons",
+    description:
+      "We take care of every factor while sourcing our ingredients.",
+    image:
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=85",
+  },
+
+  {
+    title: "What Do We Look For?",
+    subtitle: "Purity. Nutrition. Authenticity.",
+    description:
+      "Not high yield. Not lower cost. Just flavour, nutrition and honest ingredients.",
+    image:
+      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=700&q=85",
+  },
+
+  {
+    title: "Impurities, Out.",
+    subtitle: "Goodness, In.",
+    description:
+      "Only carefully selected ingredients make the cut.",
+    image:
+      "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=700&q=85",
+  },
+
+  {
+    title: "Direct From Farmers",
+    subtitle: "Honest Ingredients",
+    description:
+      "Sourcing closer to the farm helps us maintain quality and authenticity.",
+    image:
+      "https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=700&q=85",
+  },
+];
+
+/* =========================================================
+   QUALITY CHECKS
+========================================================= */
+
+const QUALITY_ITEMS = [
+  {
+    title: "Carefully Selected",
+    text:
+      "Only carefully selected raw materials are used for our products.",
+    icon: "🌿",
+  },
+
+  {
+    title: "Multiple Quality Checks",
+    text:
+      "Every batch is checked carefully before packaging.",
+    icon: "🔬",
+  },
+
+  {
+    title: "Traditional Processing",
+    text:
+      "Traditional techniques help retain authentic flavour and goodness.",
+    icon: "⚙️",
+  },
+
+  {
+    title: "Transparency First",
+    text:
+      "Our goal is to deliver food your family can trust every day.",
+    icon: "📋",
+  },
+];
+
+/* =========================================================
+   RAW MATERIAL — POSTERS & VIDEOS
+========================================================= */
+
+const RAW_MATERIAL_MEDIA = [
+  { badge: "VIDEO TOUR", duration: "2:45 min", eyebrow: "ORGANIC FARM FIELD TOUR", title: "Mustard Harvesting in Rajasthan", description: "Witness our farmer partners harvesting carefully selected mustard seeds and learn how quality begins at the farm.", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=900&q=85" },
+  { badge: "PROCESS VIDEO", duration: "3:10 min", eyebrow: "LOW RPM COLD EXTRACTION", title: "Traditional Wood-Pressed Oil", description: "See how carefully sourced seeds are slowly pressed using traditional methods to preserve natural aroma and goodness.", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=900&q=85" },
+  { badge: "ARTISAN STORY", duration: "4:05 min", eyebrow: "TRADITIONAL CRAFT", title: "Natural Jaggery Making", description: "Step inside a traditional jaggery-making process where simple ingredients and time-tested methods come together.", image: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?auto=format&fit=crop&w=900&q=85" },
+  { badge: "QUALITY CHECK", duration: "1:55 min", eyebrow: "PURITY & QUALITY", title: "From Sourcing to Final Check", description: "Take a closer look at the care, cleanliness and quality checks followed before products reach your family.", image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=85" },
+];
+
+/* =========================================================
+   CUSTOMER REVIEWS
+========================================================= */
+
+const REVIEWS = [
+  {
+    name: "Dr Shagun Walia",
+    image:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=85",
+    comment:
+      "This ghee is a healthy and delicious option for the whole family. We use it regularly and love its rich taste.",
+  },
+  {
+    name: "Pankaj Tiwari",
+    image:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&h=200&q=85",
+    comment:
+      "The quality feels very natural and authentic. I really liked the taste, freshness and overall packaging.",
+  },
+  {
+    name: "Maitreyee",
+    image:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=85",
+    comment:
+      "Absolutely delicious and beautifully prepared. The texture and aroma are excellent and it tastes homemade.",
+  },
+  {
+    name: "Neelam Sharma",
+    image:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=85",
+    comment:
+      "I love the aroma, texture and taste. The product feels pure and has become a regular part of our kitchen.",
+  },
+  {
+    name: "Amit Patil",
+    image:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=85",
+    comment:
+      "Very satisfied with the quality and packaging. The products have a fresh and authentic traditional taste.",
+  },
+  {
+    name: "Pooja Kulkarni",
+    image:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&h=200&q=85",
+    comment:
+      "The products feel fresh, pure and carefully prepared. I would definitely recommend ShreeKrishna Organics.",
+  },
+];
+
+/* =========================================================
+   HOME COMPONENT
+========================================================= */
 
 export default function Home() {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [selectedMedia, setSelectedMedia] = useState(null);
 
-  // Auto-rotating Slideshow (~10 seconds per slide)
+  /* =======================================================
+     STATES
+  ======================================================= */
+
+  const [featuredProducts, setFeaturedProducts] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [currentSlide, setCurrentSlide] =
+    useState(0);
+
+  /* =======================================================
+     PRODUCT SCROLL
+  ======================================================= */
+
+  const productScrollRef = useRef(null);
+  const reviewScrollRef = useRef(null);
+
+  /* =======================================================
+     LOAD PRODUCTS
+  ======================================================= */
+
   useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 10000); // 10 seconds
 
-    return () => clearInterval(interval);
-  }, [isPaused]);
+    async function loadProducts() {
 
-  // Load 5 Featured Products for the 5-column wireframe grid
-  useEffect(() => {
-    async function loadFeatured() {
       try {
-        const data = await productService.getFeaturedProducts();
-        // Take top 5 items for the 5-in-a-row wireframe row
-        setFeaturedProducts(data.slice(0, 5));
-      } catch (err) {
-        console.error("Error loading featured products", err);
+
+        const data =
+          await productService.getFeaturedProducts();
+
+        setFeaturedProducts(
+          Array.isArray(data) ? data : []
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Error loading products:",
+          error
+        );
+
+        setFeaturedProducts([]);
+
       } finally {
+
         setLoading(false);
+
       }
     }
-    loadFeatured();
+
+    loadProducts();
+
   }, []);
 
-  const slide = HERO_SLIDES[currentSlide];
+  /* =======================================================
+     HERO AUTO SLIDE
+  ======================================================= */
 
-  const handleNextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+  useEffect(() => {
+
+    const timer = setInterval(() => {
+
+      setCurrentSlide(
+        (current) =>
+          (current + 1) %
+          HERO_SLIDES.length
+      );
+
+    }, 6000);
+
+    return () =>
+      clearInterval(timer);
+
+  }, []);
+
+  /* =======================================================
+     CURRENT HERO SLIDE
+  ======================================================= */
+
+  const slide =
+    HERO_SLIDES[currentSlide];
+
+  /* =======================================================
+     NEXT HERO
+  ======================================================= */
+
+  const nextSlide = () => {
+
+    setCurrentSlide(
+      (current) =>
+        (current + 1) %
+        HERO_SLIDES.length
+    );
+
   };
 
-  const handlePrevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  /* =======================================================
+     PREVIOUS HERO
+  ======================================================= */
+
+  const previousSlide = () => {
+
+    setCurrentSlide(
+      (current) =>
+        (current - 1 + HERO_SLIDES.length) %
+        HERO_SLIDES.length
+    );
+
   };
+
+  /* =======================================================
+     PRODUCT SCROLL
+  ======================================================= */
+
+  const scrollProducts = (direction) => {
+
+    if (!productScrollRef.current) {
+      return;
+    }
+
+    productScrollRef.current.scrollBy({
+      left:
+        direction === "right"
+          ? 900
+          : -900,
+
+      behavior: "smooth",
+    });
+
+  };
+
+  /* =======================================================
+     REVIEW SCROLL
+  ======================================================= */
+
+  const scrollReviews = (direction) => {
+    if (!reviewScrollRef.current) return;
+
+    reviewScrollRef.current.scrollBy({
+      left: direction === "right" ? 370 : -370,
+      behavior: "smooth",
+    });
+  };
+
+  /* =======================================================
+     PAGE
+  ======================================================= */
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FAF6EF]">
 
-      {/* =========================================================================
-          1. HERO SECTION (POSTER IMAGE SLIDESHOW: 4-5 Slides, 10s per slide)
-      ========================================================================== */}
+    <main className="min-h-screen bg-white">
+
+      {/* =====================================================
+          HERO SECTION
+      ===================================================== */}
+
       <section
-        className="relative overflow-hidden bg-[#2B241D] text-[#FAF6EF] py-16 lg:py-24 transition-colors duration-700"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
+        className="
+          relative
+          w-full
+          overflow-hidden
+          bg-[#edf5e8]
+        "
       >
-        {/* Subtle decorative background pattern */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#FAF6EF_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+        <div
+          className="
+            relative
+            min-h-[500px]
+            lg:min-h-[590px]
+          "
+        >
 
-            {/* Left Column: Editorial Headline, Badges & CTAs */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left animate-in fade-in duration-500 key={currentSlide}">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-[#FAF6EF] text-xs font-semibold tracking-wider uppercase backdrop-blur-xs">
-                <span className="w-2 h-2 rounded-full bg-[#B5563C] animate-ping" />
-                <span>{slide.badge}</span>
-              </div>
+          {/* HERO IMAGE */}
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-[#FAF6EF] leading-[1.15]">
-                {slide.title} <br className="hidden sm:inline" />
-                <span className="italic font-normal text-[#C68A2E]">{slide.titleAccent}</span>
+          <img
+            key={slide.id}
+            src={slide.image}
+            alt={slide.title}
+            className="
+              absolute
+              inset-0
+              w-full
+              h-full
+              object-cover
+            "
+          />
+
+          {/* IMAGE OVERLAY */}
+
+          <div
+            className="
+              absolute
+              inset-0
+              bg-gradient-to-r
+              from-[#edf5e8]
+              via-[#edf5e8]/90
+              to-transparent
+            "
+          />
+
+          {/* HERO CONTENT */}
+
+          <div
+            className="
+              relative
+              max-w-7xl
+              mx-auto
+              px-5
+              sm:px-8
+              min-h-[500px]
+              lg:min-h-[590px]
+              flex
+              items-center
+            "
+          >
+
+            <div className="max-w-2xl">
+
+              <span
+                className="
+                  inline-block
+                  bg-[#075e4d]
+                  text-white
+                  text-xs
+                  font-bold
+                  tracking-[0.15em]
+                  px-4
+                  py-2
+                  rounded-full
+                  mb-5
+                "
+              >
+                {slide.smallTitle}
+              </span>
+
+              <h1
+                className="
+                  text-4xl
+                  sm:text-5xl
+                  lg:text-7xl
+                  font-serif
+                  font-bold
+                  text-[#075e4d]
+                  leading-[1.05]
+                "
+              >
+                {slide.title}
               </h1>
 
-              <p className="text-base sm:text-lg text-stone-300 font-sans max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              <h2
+                className="
+                  text-2xl
+                  lg:text-4xl
+                  mt-3
+                  font-serif
+                  text-[#176c58]
+                "
+              >
+                {slide.subtitle}
+              </h2>
+
+              <p
+                className="
+                  mt-5
+                  max-w-xl
+                  text-gray-700
+                  text-base
+                  lg:text-lg
+                  leading-relaxed
+                "
+              >
                 {slide.description}
               </p>
 
-              {/* Key Quick Badges */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3.5 pt-1 text-xs text-stone-200">
-                <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                  <CheckCircle2 className="w-4 h-4 text-[#B5563C]" />
-                  <span>100% Raw & Unrefined</span>
-                </div>
-                <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                  <CheckCircle2 className="w-4 h-4 text-[#B5563C]" />
-                  <span>Vaagai Wood Churned</span>
-                </div>
-                <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                  <CheckCircle2 className="w-4 h-4 text-[#B5563C]" />
-                  <span>NABL Lab Tested</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-3 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <Button
-                  to={slide.ctaLink}
-                  variant="primary"
-                  size="lg"
-                  className="w-full sm:w-auto font-semibold shadow-lg shadow-[#B5563C]/30"
-                  icon={ArrowRight}
-                  iconPosition="right"
-                >
-                  {slide.ctaText}
-                </Button>
-
-                <Button
-                  to="/about"
-                  variant="secondary"
-                  size="lg"
-                  className="w-full sm:w-auto bg-transparent text-white border-white/30 hover:bg-white/10 hover:border-white"
-                >
-                  Our Extraction Story
-                </Button>
-              </div>
-
-              {/* Social Proof snippet */}
-              <div className="pt-4 border-t border-white/10 flex items-center justify-center lg:justify-start gap-4">
-                <div className="flex -space-x-2">
-                  <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#2B241D] object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Customer" />
-                  <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#2B241D] object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Customer" />
-                  <img className="inline-block h-8 w-8 rounded-full ring-2 ring-[#2B241D] object-cover" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80" alt="Customer" />
-                </div>
-                <div className="text-left text-xs">
-                  <div className="flex text-[#C68A2E]">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-[#C68A2E]" />
-                    ))}
-                  </div>
-                  <span className="text-stone-300 font-medium">Loved by 25,000+ Indian households</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Hero Visual Slideshow Card */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md lg:max-w-none">
-
-                {/* Decorative Slide Frame */}
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 bg-[#1F1813] group">
-                  <img
-                    key={slide.id}
-                    src={slide.image}
-                    alt={slide.title}
-                    className="w-full h-[420px] object-cover object-center transition-all duration-700 ease-out transform group-hover:scale-105"
-                  />
-
-                  {/* Overlay Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1F1813]/90 via-[#1F1813]/20 to-transparent" />
-
-                  {/* Prev / Next Slide Arrow Controls */}
-                  <button
-                    type="button"
-                    onClick={handlePrevSlide}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-[#B5563C] text-white flex items-center justify-center backdrop-blur-xs transition-all opacity-80 hover:opacity-100 cursor-pointer"
-                    aria-label="Previous slide"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleNextSlide}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-[#B5563C] text-white flex items-center justify-center backdrop-blur-xs transition-all opacity-80 hover:opacity-100 cursor-pointer"
-                    aria-label="Next slide"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-
-                  {/* Floating Highlight Card */}
-                  <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/30 text-stone-900 shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#B5563C] block">
-                          Heritage Spotlight
-                        </span>
-                        <h4 className="font-serif font-bold text-sm text-[#2B241D]">{slide.featureTitle}</h4>
-                        <p className="text-[11px] text-stone-600 mt-0.5">{slide.featureDesc}</p>
-                      </div>
-                      <div className="w-10 h-10 rounded-xl bg-[#2B241D] text-[#FAF6EF] flex items-center justify-center font-bold text-sm">
-                        🌿
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slideshow Dot Indicators (4-5 dots per wireframe) */}
-                <div className="flex items-center justify-center gap-2.5 mt-5">
-                  {HERO_SLIDES.map((s, idx) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setCurrentSlide(idx)}
-                      className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${currentSlide === idx
-                          ? 'w-8 bg-[#B5563C]'
-                          : 'w-2.5 bg-white/30 hover:bg-white/60'
-                        }`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          2. CATEGORY STRIP (4 Circular Categories per Wireframe)
-      ========================================================================== */}
-      <section className="py-14 bg-white border-b border-[#E8DFD3]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <span className="text-xs uppercase tracking-widest text-[#B5563C] font-bold block mb-1">
-              Explore Departments
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2B241D]">
-              Shop by Heritage Category
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 max-w-5xl mx-auto">
-            {CATEGORIES.map((cat) => (
               <Link
-                key={cat.id}
-                to={cat.path}
-                className="group flex flex-col items-center text-center p-4 rounded-3xl hover:bg-[#FAF6EF] transition-all duration-300"
+                to={slide.link}
+                className="
+                  inline-flex
+                  items-center
+                  gap-3
+                  mt-8
+                  bg-[#ef7d18]
+                  hover:bg-[#db6d0e]
+                  text-white
+                  font-bold
+                  px-9
+                  py-4
+                  rounded-full
+                  transition
+                "
               >
-                {/* Circular Icon / Avatar matching Wireframe */}
-                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-[#FAF6EF] border-2 border-[#E8DFD3] group-hover:border-[#B5563C] shadow-subtle group-hover:shadow-card group-hover:scale-105 transition-all duration-300 flex items-center justify-center mb-3">
-                  <img
-                    src={cat.image}
-                    alt={cat.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-[#2B241D]/20 group-hover:bg-transparent transition-colors" />
-                  <span className="absolute text-2xl drop-shadow-md">
-                    {cat.icon}
-                  </span>
-                </div>
+                {slide.button}
 
-                <h3 className="font-serif font-bold text-base sm:text-lg text-[#2B241D] group-hover:text-[#B5563C] transition-colors">
-                  {cat.name}
-                </h3>
-                <p className="text-xs text-stone-500 font-sans mt-0.5">
-                  {cat.description}
-                </p>
+                <ShoppingCart size={19} />
               </Link>
-            ))}
+
+            </div>
+
           </div>
+
+          {/* PREVIOUS BUTTON */}
+
+          <button
+            type="button"
+            onClick={previousSlide}
+            className="
+              absolute
+              left-4
+              top-1/2
+              -translate-y-1/2
+              w-11
+              h-11
+              rounded-full
+              bg-white/80
+              hover:bg-white
+              flex
+              items-center
+              justify-center
+              shadow
+            "
+            aria-label="Previous slide"
+          >
+            <ChevronLeft />
+          </button>
+
+          {/* NEXT BUTTON */}
+
+          <button
+            type="button"
+            onClick={nextSlide}
+            className="
+              absolute
+              right-4
+              top-1/2
+              -translate-y-1/2
+              w-11
+              h-11
+              rounded-full
+              bg-white/80
+              hover:bg-white
+              flex
+              items-center
+              justify-center
+              shadow
+            "
+            aria-label="Next slide"
+          >
+            <ChevronRight />
+          </button>
+
+          {/* HERO DOTS */}
+
+          <div
+            className="
+              absolute
+              bottom-6
+              left-1/2
+              -translate-x-1/2
+              flex
+              gap-2
+            "
+          >
+
+            {HERO_SLIDES.map(
+              (item, index) => (
+
+                <button
+                  type="button"
+                  key={item.id}
+                  onClick={() =>
+                    setCurrentSlide(index)
+                  }
+                  aria-label={`Go to slide ${
+                    index + 1
+                  }`}
+                  className={`
+                    h-2.5
+                    rounded-full
+                    transition-all
+
+                    ${
+                      index === currentSlide
+                        ? "w-8 bg-[#075e4d]"
+                        : "w-2.5 bg-white"
+                    }
+                  `}
+                />
+
+              )
+            )}
+
+          </div>
+
         </div>
+
       </section>
 
-      {/* =========================================================================
-          3. FEATURED PRODUCTS (5 Items in a Row per Wireframe)
-      ========================================================================== */}
-      <section className="py-20 bg-[#FAF6EF] border-b border-[#E8DFD3]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* =====================================================
+          WELCOME + CATEGORIES
+      ===================================================== */}
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase bg-[#ECE4D8] text-[#2B241D] mb-2 border border-[#E8DFD3]">
-                <Sparkles className="w-3.5 h-3.5 text-[#B5563C]" />
-                Fresh Batches
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#2B241D]">
-                Featured Products
-              </h2>
-              <p className="mt-2 text-sm text-stone-600 font-sans max-w-lg">
-                Handcrafted pure oils, organic jaggery, and Vedic A2 ghee. Unrefined, honest, and chemical-free.
-              </p>
-            </div>
+      <section
+        className="
+          relative
+          overflow-hidden
+          pt-12
+          pb-5
+          bg-gradient-to-r
+          from-[#FFF8E7]
+          via-[#F8E8B8]
+          to-[#FFF8E7]
+        "
+      >
 
-            <div className="mt-4 md:mt-0">
-              <Button to="/shop" variant="secondary" icon={ArrowRight} iconPosition="right" size="md">
-                View All Products
-              </Button>
-            </div>
+        <div
+          className="
+            absolute
+            top-0
+            left-[-35%]
+            w-[35%]
+            h-full
+            bg-gradient-to-r
+            from-transparent
+            via-white/45
+            to-transparent
+            skew-x-[-20deg]
+            animate-[goldenWelcome_5s_ease-in-out_infinite]
+            pointer-events-none
+          "
+        />
+
+        <div
+          className="
+            absolute
+            -top-24
+            left-1/2
+            -translate-x-1/2
+            w-[550px]
+            h-[250px]
+            rounded-full
+            bg-[#F4D77C]/20
+            blur-3xl
+            pointer-events-none
+          "
+        />
+
+        <div
+          className="
+            relative
+            z-10
+            max-w-7xl
+            mx-auto
+            px-4
+          "
+        >
+
+          <div className="text-center">
+
+            <h2
+              className="
+                welcome-golden-text
+                font-serif
+                text-3xl
+                lg:text-4xl
+                font-bold
+              "
+            >
+              Welcome To ShreeKrishna Organics!
+            </h2>
+
+            <p
+              className="
+                welcome-golden-text
+                font-serif
+                text-xl
+                lg:text-3xl
+                mt-2
+              "
+            >
+              You're One Step Closer to Purity
+            </p>
+
           </div>
+
+          {/* CATEGORIES */}
+
+          <div
+            className="
+              flex
+              justify-start
+              md:justify-center
+              items-center
+              gap-8
+              lg:gap-12
+              mt-8
+              overflow-x-auto
+              pb-2
+            "
+          >
+
+            {CATEGORIES.map(
+              (category) => (
+
+                <Link
+                  key={category.name}
+                  to={category.link}
+                  className="
+                    group
+                    min-w-[70px]
+                    text-center
+                    transition-all
+                    duration-300
+                    hover:-translate-y-1
+                  "
+                >
+
+                  <div className="text-3xl transition-transform duration-300 group-hover:scale-110">
+                    {category.icon}
+                  </div>
+
+                  <p
+                    className="
+                      text-sm
+                      mt-2
+                      text-gray-700
+                      group-hover:text-[#075e4d]
+                    "
+                  >
+                    {category.name}
+                  </p>
+
+                  {category.name === "All" && (
+
+                    <div
+                      className="
+                        h-[3px]
+                        bg-[#075e4d]
+                        rounded
+                        mt-3
+                      "
+                    />
+
+                  )}
+
+                </Link>
+
+              )
+            )}
+
+          </div>
+
+        </div>
+
+        <style>{`
+          @keyframes goldenWelcome {
+            0% { left: -40%; opacity: 0; }
+            15% { opacity: 1; }
+            60% { opacity: 0.8; }
+            100% { left: 120%; opacity: 0; }
+          }
+
+          .welcome-golden-text {
+            color: #075e4d;
+            background: linear-gradient(
+              110deg,
+              #075e4d 0%,
+              #075e4d 30%,
+              #c69528 42%,
+              #f5c44f 50%,
+              #e1ad37 58%,
+              #075e4d 70%,
+              #075e4d 100%
+            );
+            background-size: 250% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: welcomeGoldenTextMove 2.4s linear infinite;
+          }
+
+          @keyframes welcomeGoldenTextMove {
+            0% { background-position: 150% center; }
+            100% { background-position: -150% center; }
+          }
+        `}</style>
+
+      </section>
+
+      {/* =====================================================
+          FEATURED PRODUCTS
+      ===================================================== */}
+
+      <section
+        className="
+          bg-white
+          py-5
+          border-t
+          border-gray-100
+        "
+      >
+
+        <div className="relative">
 
           {loading ? (
-            <LoadingSpinner />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+
+            <div className="py-20">
+
+              <LoadingSpinner />
+
             </div>
+
+          ) : featuredProducts.length === 0 ? (
+
+            <p
+              className="
+                text-center
+                py-12
+                text-gray-500
+              "
+            >
+              Products are currently unavailable.
+            </p>
+
+          ) : (
+
+            <>
+
+              <div
+                ref={productScrollRef}
+                className="
+                  flex
+                  gap-4
+                  overflow-x-auto
+                  scroll-smooth
+                  px-5
+                  lg:px-12
+                  pb-5
+                "
+              >
+
+                {featuredProducts.map(
+                  (product) => (
+
+                    <div
+                      key={product.id}
+                      className="
+                        min-w-[270px]
+                        sm:min-w-[285px]
+                        lg:min-w-[300px]
+                      "
+                    >
+
+                      <ProductCard
+                        product={product}
+                      />
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+              {/* PRODUCT LEFT */}
+
+              <button
+                type="button"
+                onClick={() =>
+                  scrollProducts("left")
+                }
+                className="
+                  hidden
+                  lg:flex
+                  absolute
+                  left-2
+                  top-1/2
+                  -translate-y-1/2
+                  w-11
+                  h-11
+                  bg-white
+                  shadow-lg
+                  border
+                  rounded-full
+                  items-center
+                  justify-center
+                "
+                aria-label="Previous products"
+              >
+                <ChevronLeft />
+              </button>
+
+              {/* PRODUCT RIGHT */}
+
+              <button
+                type="button"
+                onClick={() =>
+                  scrollProducts("right")
+                }
+                className="
+                  hidden
+                  lg:flex
+                  absolute
+                  right-2
+                  top-1/2
+                  -translate-y-1/2
+                  w-11
+                  h-11
+                  bg-white
+                  shadow-lg
+                  border
+                  rounded-full
+                  items-center
+                  justify-center
+                "
+                aria-label="Next products"
+              >
+                <ChevronRight />
+              </button>
+
+            </>
+
           )}
 
         </div>
+
+        {/* SEE ALL */}
+
+        <div className="text-center mt-5">
+
+          <Link
+            to="/shop"
+            className="
+              inline-flex
+              items-center
+              gap-2
+              border
+              border-[#075e4d]
+              text-[#075e4d]
+              px-7
+              py-3
+              rounded-full
+              font-semibold
+              hover:bg-[#075e4d]
+              hover:text-white
+              transition
+            "
+          >
+            See All
+
+            <span>→</span>
+          </Link>
+
+        </div>
+
       </section>
 
-      {/* =========================================================================
-          4. WHY CHOOSE SHREEKRISHNA ORGANICS? (4-Item Benefits/USP Row per Wireframe)
-      ========================================================================== */}
-      <section className="py-20 bg-white border-b border-[#E8DFD3]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader
-            badge="Quality Standard"
-            title="Why Choose ShreeKrishna Organics?"
-            subtitle="We adhere to rigorous ancient traditions that never compromise on honesty, nutrition, or purity."
-          />
+      {/* =====================================================
+          WHY CHOOSE
+      ===================================================== */}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <section
+        className="
+          bg-[#fcfdfb]
+          py-20
+        "
+      >
 
-            {/* Benefit 1 */}
-            <div className="bg-[#FAF6EF] p-8 rounded-3xl border border-[#E8DFD3] text-center flex flex-col items-center shadow-subtle hover:border-[#B5563C]/50 hover:shadow-card transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-white text-[#B5563C] flex items-center justify-center mb-5 border border-[#E8DFD3] shadow-xs">
-                <Layers className="w-8 h-8 text-[#B5563C]" />
-              </div>
-              <h3 className="font-serif font-bold text-lg text-[#2B241D]">100% Vaagai Wood Press</h3>
-              <p className="text-xs text-stone-600 mt-2.5 leading-relaxed">
-                Slow crushed in authentic Albizia lebbeck wood mortars at under 14 RPM, keeping extraction strictly below 40°C.
-              </p>
-            </div>
+        <div
+          className="
+            max-w-7xl
+            mx-auto
+            px-6
+          "
+        >
 
-            {/* Benefit 2 */}
-            <div className="bg-[#FAF6EF] p-8 rounded-3xl border border-[#E8DFD3] text-center flex flex-col items-center shadow-subtle hover:border-[#B5563C]/50 hover:shadow-card transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-white text-[#B5563C] flex items-center justify-center mb-5 border border-[#E8DFD3] shadow-xs">
-                <Leaf className="w-8 h-8 text-[#B5563C]" />
-              </div>
-              <h3 className="font-serif font-bold text-lg text-[#2B241D]">Single-Origin Seeds</h3>
-              <p className="text-xs text-stone-600 mt-2.5 leading-relaxed">
-                Directly sourced from 350+ certified organic farming families across Rajasthan, Gujarat, Maharashtra, and Kerala.
-              </p>
-            </div>
+          <h2
+            className="
+              text-center
+              text-3xl
+              lg:text-4xl
+              font-serif
+              font-bold
+              text-[#075e4d]
+              mb-16
+            "
+          >
+            Why Choose ShreeKrishna Organics?
+          </h2>
 
-            {/* Benefit 3 */}
-            <div className="bg-[#FAF6EF] p-8 rounded-3xl border border-[#E8DFD3] text-center flex flex-col items-center shadow-subtle hover:border-[#B5563C]/50 hover:shadow-card transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-white text-[#B5563C] flex items-center justify-center mb-5 border border-[#E8DFD3] shadow-xs">
-                <ShieldCheck className="w-8 h-8 text-[#B5563C]" />
-              </div>
-              <h3 className="font-serif font-bold text-lg text-[#2B241D]">Zero Chemical Solvents</h3>
-              <p className="text-xs text-stone-600 mt-2.5 leading-relaxed">
-                Zero hexane extraction, no synthetic bleaching clays, and no deodorizing. Single-cloth filtered for authentic nutrition.
-              </p>
-            </div>
+          <div
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-4
+              gap-12
+            "
+          >
 
-            {/* Benefit 4 */}
-            <div className="bg-[#FAF6EF] p-8 rounded-3xl border border-[#E8DFD3] text-center flex flex-col items-center shadow-subtle hover:border-[#B5563C]/50 hover:shadow-card transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-white text-[#B5563C] flex items-center justify-center mb-5 border border-[#E8DFD3] shadow-xs">
-                <Award className="w-8 h-8 text-[#B5563C]" />
-              </div>
-              <h3 className="font-serif font-bold text-lg text-[#2B241D]">NABL Lab-Tested Batches</h3>
-              <p className="text-xs text-stone-600 mt-2.5 leading-relaxed">
-                Every batch is independently tested for iodine values and purity. Verifiable batch reports available on every bottle QR code.
-              </p>
-            </div>
+            {BENEFITS.map(
+              (benefit, index) => {
 
+                const Icon = benefit.icon;
+
+                return (
+
+                  <div
+                    key={index}
+                    className="text-center"
+                  >
+
+                    <div
+                      className="
+                        flex
+                        justify-center
+                        mb-7
+                      "
+                    >
+
+                      <Icon
+                        size={64}
+                        strokeWidth={1.4}
+                        className="text-[#176c58]"
+                      />
+
+                    </div>
+
+                    <h3
+                      className="
+                        font-serif
+                        font-bold
+                        text-xl
+                        text-[#075e4d]
+                      "
+                    >
+                      {benefit.title}
+                    </h3>
+
+                    <p
+                      className="
+                        mt-3
+                        text-gray-600
+                        leading-relaxed
+                        max-w-[270px]
+                        mx-auto
+                      "
+                    >
+                      {benefit.text}
+                    </p>
+
+                  </div>
+
+                );
+
+              }
+            )}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          NATIVE INGREDIENTS
+      ===================================================== */}
+
+      <section
+        className="
+          bg-[#fff5d7]
+          py-20
+        "
+      >
+
+        <div
+          className="
+            max-w-7xl
+            mx-auto
+            px-5
+          "
+        >
+
+          <h2
+            className="
+              text-center
+              text-3xl
+              lg:text-4xl
+              font-serif
+              font-bold
+              text-[#b87425]
+              mb-12
+            "
+          >
+            Native Ingredients. No Substitutes.
+          </h2>
+
+          <div
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-4
+              gap-5
+            "
+          >
+
+            {INGREDIENTS.map(
+              (item, index) => (
+
+                <div
+                  key={index}
+                  className="
+                    relative
+                    rounded-xl
+                    overflow-hidden
+                    h-[440px]
+                    group
+                  "
+                >
+
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="
+                      absolute
+                      inset-0
+                      w-full
+                      h-full
+                      object-cover
+                      group-hover:scale-105
+                      transition
+                      duration-700
+                    "
+                  />
+
+                  <div
+                    className="
+                      absolute
+                      inset-0
+                      bg-gradient-to-b
+                      from-black/70
+                      via-black/10
+                      to-black/30
+                    "
+                  />
+
+                  <div
+                    className="
+                      relative
+                      text-center
+                      text-white
+                      px-5
+                      pt-8
+                    "
+                  >
+
+                    <h3
+                      className="
+                        text-2xl
+                        font-bold
+                      "
+                    >
+                      {item.title}
+                    </h3>
+
+                    <h4
+                      className="
+                        text-lg
+                        font-semibold
+                        mt-1
+                      "
+                    >
+                      {item.subtitle}
+                    </h4>
+
+                    <p
+                      className="
+                        mt-3
+                        text-sm
+                      "
+                    >
+                      {item.description}
+                    </p>
+
+                  </div>
+
+                </div>
+
+              )
+            )}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          PRODUCT IN FOCUS REMOVED
+          
+          Oils section removed
+          Ghee section removed
+      ===================================================== */}
+
+      {/* =====================================================
+          QUALITY SECTION
+      ===================================================== */}
+
+      <section
+        className="
+          bg-[#dff5fa]
+          py-20
+        "
+      >
+
+        <div
+          className="
+            max-w-7xl
+            mx-auto
+            px-5
+          "
+        >
+
+          <h2
+            className="
+              text-center
+              font-serif
+              font-bold
+              text-3xl
+              lg:text-4xl
+              text-[#3193a5]
+              mb-12
+            "
+          >
+            Only Perfect Makes The Cut
+          </h2>
+
+          <div
+            className="
+              grid
+              grid-cols-1
+              sm:grid-cols-2
+              lg:grid-cols-4
+              gap-5
+            "
+          >
+
+            {QUALITY_ITEMS.map(
+              (item, index) => (
+
+                <div
+                  key={index}
+                  className="
+                    bg-[#fff9e9]
+                    min-h-[390px]
+                    rounded-xl
+                    p-7
+                    text-center
+                    flex
+                    flex-col
+                    items-center
+                    justify-center
+                    shadow-sm
+                  "
+                >
+
+                  <div
+                    className="
+                      text-6xl
+                      mb-8
+                    "
+                  >
+                    {item.icon}
+                  </div>
+
+                  <h3
+                    className="
+                      text-xl
+                      lg:text-2xl
+                      font-bold
+                      text-[#176c58]
+                    "
+                  >
+                    {item.title}
+                  </h3>
+
+                  <p
+                    className="
+                      mt-4
+                      text-gray-600
+                      leading-relaxed
+                    "
+                  >
+                    {item.text}
+                  </p>
+
+                  <CheckCircle2
+                    className="
+                      mt-7
+                      text-[#176c58]
+                    "
+                    size={30}
+                  />
+
+                </div>
+
+              )
+            )}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
+          RAW MATERIAL — POSTERS & VIDEOS
+      ===================================================== */}
+
+      <section className="relative overflow-hidden bg-[#f8f4ec] py-20 lg:py-24">
+        <div className="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#e7c56d]/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-[#075e4d]/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#dfd2bc] bg-[#efe8dc] px-4 py-2 text-[10px] sm:text-[11px] font-bold tracking-[0.12em] text-[#493c2e]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#c85b3d]" />
+              FARM TO TABLE
+            </span>
+            <h2 className="mt-5 font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#201b16]">
+              Raw Material — Posters & Videos
+            </h2>
+            <p className="mt-4 text-sm sm:text-base lg:text-lg leading-7 text-[#6c5746]">
+              Take a transparent behind-the-scenes look at our ethical sourcing, traditional processing and careful quality practices.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+            {RAW_MATERIAL_MEDIA.map((item, index) => (
+              <article key={index} className="group overflow-hidden rounded-[22px] border border-[#e6dccd] bg-white shadow-[0_8px_24px_rgba(74,54,35,0.08)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_16px_35px_rgba(74,54,35,0.14)]">
+                <div className="relative h-[215px] overflow-hidden bg-[#ece5d9]">
+                  <img src={item.image} alt={item.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-black/10" />
+                  <span className="absolute top-4 left-4 rounded-md bg-[#292622]/90 px-3 py-1.5 text-[9px] font-bold tracking-wide text-white">{item.badge}</span>
+                  <span className="absolute top-4 right-4 rounded-md bg-[#292622]/75 px-2.5 py-1.5 text-[9px] font-bold tracking-wide text-white">{item.duration}</span>
+                  <button type="button" aria-label={`Play ${item.title}`} className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#c95738] text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[#b8492e]">
+                    <Play size={22} fill="currentColor" className="ml-1" />
+                  </button>
+                </div>
+                <div className="p-5">
+                  <p className="text-[10px] font-semibold tracking-[0.08em] text-[#c95738]">{item.eyebrow}</p>
+                  <h3 className="mt-2 min-h-[52px] font-serif text-[18px] font-bold leading-6 text-[#211c17]">{item.title}</h3>
+                  <p className="mt-2 text-[12px] leading-5 text-[#766453] line-clamp-2">{item.description}</p>
+                  <button type="button" className="mt-5 inline-flex items-center gap-2 text-[12px] font-bold text-[#211c17] transition-colors hover:text-[#c95738]">
+                    Watch Preview <span className="text-base leading-none transition-transform group-hover:translate-x-1">→</span>
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* =========================================================================
-          5. RAW MATERIAL — POSTERS & VIDEOS (4-Item Media Row per Wireframe)
-      ========================================================================== */}
-      <section className="py-20 bg-[#FAF6EF] border-b border-[#E8DFD3]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader
-            badge="Farm to Table"
-            title="Raw Material — Posters & Videos"
-            subtitle="Take a transparent behind-the-scenes look at our ethical harvest, artisanal wood pressing, and natural filtration."
-          />
+      {/* =====================================================
+          CUSTOMER REVIEWS
+      ===================================================== */}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {MEDIA_ITEMS.map((item) => (
+      <section className="bg-[#fbfdfb] pt-7 pb-10 overflow-hidden">
+        <div className="border-t border-gray-300 mx-2 mb-5" />
+
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-center font-serif text-3xl lg:text-4xl font-bold text-[#173b4d] mb-10">
+            What Do Our Customers Say
+          </h2>
+
+          <div
+            ref={reviewScrollRef}
+            className="flex gap-5 overflow-x-auto scroll-smooth pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {REVIEWS.map((review, index) => (
               <div
-                key={item.id}
-                onClick={() => setSelectedMedia(item)}
-                className="group bg-white rounded-3xl overflow-hidden border border-[#E8DFD3] shadow-subtle hover:shadow-card transition-all duration-300 cursor-pointer flex flex-col"
+                key={index}
+                className="min-w-[290px] sm:min-w-[330px] lg:min-w-[350px] min-h-[205px] bg-white border border-[#dfe7e3] rounded-2xl px-6 py-6 shadow-[0_4px_15px_rgba(0,0,0,0.05)] flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(0,0,0,0.08)]"
               >
-                {/* Media Image / Video Thumbnail */}
-                <div className="relative aspect-[4/3] overflow-hidden bg-stone-900">
-                  <img
-                    src={item.thumbnail}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                  />
+                <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed">
+                  {review.comment}
+                </p>
 
-                  {/* Dark gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-
-                  {/* Top Type Badge */}
-                  <div className="absolute top-3 left-3">
-                    <span className="px-2.5 py-1 bg-[#2B241D]/90 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg backdrop-blur-xs border border-white/20">
-                      {item.type}
-                    </span>
+                <div className="flex items-center gap-4 mt-7">
+                  <div className="w-[58px] h-[58px] rounded-full overflow-hidden shrink-0 border-2 border-[#d9e5df] bg-[#edf5e8] shadow-sm">
+                    <img
+                      src={review.image}
+                      alt={review.name}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          review.name
+                        )}&size=200&background=edf5e8&color=075e4d&bold=true`;
+                      }}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
-                  {/* Duration pill */}
-                  <div className="absolute top-3 right-3">
-                    <span className="px-2 py-0.5 bg-black/60 text-stone-200 text-[10px] font-mono rounded-md">
-                      {item.duration}
-                    </span>
-                  </div>
+                  <div>
+                    <h3 className="font-serif font-bold text-[14px] text-[#173b4d]">
+                      {review.name}
+                    </h3>
 
-                  {/* Play / View Button Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-[#B5563C] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Play className="w-5 h-5 fill-white ml-0.5" />
+                    <div className="flex gap-[3px] mt-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={13}
+                          className="fill-[#f4aa00] text-[#f4aa00]"
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
-
-                {/* Body */}
-                <div className="p-5 flex flex-col flex-grow">
-                  <span className="text-[11px] font-semibold text-[#B5563C] uppercase tracking-wider">
-                    {item.subtitle}
-                  </span>
-                  <h4 className="font-serif font-bold text-base text-[#2B241D] mt-1 group-hover:text-[#B5563C] transition-colors">
-                    {item.title}
-                  </h4>
-                  <p className="mt-2 text-xs text-stone-500 line-clamp-2 leading-relaxed">
-                    {item.description}
-                  </p>
-
-                  <div className="mt-auto pt-4 flex items-center gap-1 text-xs font-bold text-[#2B241D] group-hover:text-[#B5563C] transition-colors">
-                    <span>Watch Preview</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          6. PRODUCTS IN FOCUS (Spotlight Section: 1 Large + 2 Stacked Tiles)
-      ========================================================================== */}
-      <section className="py-20 bg-white border-b border-[#E8DFD3]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader
-            badge="Curated Spotlight"
-            title="Products in Focus"
-            subtitle="Our most celebrated traditional kitchen staples, bundled and formulated for conscious modern households."
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-
-            {/* 1 Large Tile (Left Col - 7 Cols) */}
-            <div className="lg:col-span-7 bg-[#FAF6EF] rounded-3xl p-8 sm:p-10 border border-[#E8DFD3] shadow-card flex flex-col justify-between relative overflow-hidden group">
-              {/* Background gradient blob */}
-              <div className="absolute top-0 right-0 w-72 h-72 bg-[#B5563C]/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="px-3 py-1 bg-[#B5563C] text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-xs">
-                    ⭐ Best Value Pantry Pack
-                  </span>
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg">
-                    Save 18% Off
-                  </span>
-                </div>
-
-                <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#2B241D] leading-tight">
-                  ShreeKrishna Heritage Trio Oil Combo
-                </h3>
-
-                <p className="mt-3 text-sm text-stone-600 leading-relaxed max-w-xl">
-                  Upgrade your daily kitchen with our 3-in-1 pantry collection: <strong>1L Yellow Mustard Oil</strong> (for tadkas & curries), <strong>1L Raw Cold-Pressed Coconut Oil</strong> (for South Indian specialties), and <strong>1L Wood-Pressed Groundnut Oil</strong> (for high-heat frying & gravies).
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-6">
-                  <div className="bg-white p-3 rounded-2xl border border-[#E8DFD3] text-center">
-                    <span className="text-xs font-bold text-[#2B241D] block">1L Yellow Mustard</span>
-                    <span className="text-[11px] text-stone-500">Rajasthan Ghani</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-2xl border border-[#E8DFD3] text-center">
-                    <span className="text-xs font-bold text-[#2B241D] block">1L Virgin Coconut</span>
-                    <span className="text-[11px] text-stone-500">Kerala Cold Expeller</span>
-                  </div>
-                  <div className="bg-white p-3 rounded-2xl border border-[#E8DFD3] text-center">
-                    <span className="text-xs font-bold text-[#2B241D] block">1L Native Groundnut</span>
-                    <span className="text-[11px] text-stone-500">Saurashtra Kolhu</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-[#E8DFD3] flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-center sm:text-left">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold font-sans text-[#2B241D]">₹1,149</span>
-                    <span className="text-sm text-stone-400 line-through">₹1,400</span>
-                  </div>
-                  <span className="text-xs text-stone-500">Free Express Delivery Included</span>
-                </div>
-
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <Button
-                    to="/product/shreekrishna-heritage-trio-oil-combo"
-                    variant="primary"
-                    size="md"
-                    className="w-full sm:w-auto font-bold"
-                  >
-                    View Details
-                  </Button>
-                  <Button
-                    to="/shop"
-                    variant="secondary"
-                    size="md"
-                    className="w-full sm:w-auto"
-                  >
-                    All Combos
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* 2 Stacked Smaller Tiles (Right Col - 5 Cols) */}
-            <div className="lg:col-span-5 flex flex-col gap-6">
-
-              {/* Stacked Tile 1: Palm Jaggery Karupatti */}
-              <div className="bg-[#FAF6EF] rounded-3xl p-6 border border-[#E8DFD3] shadow-subtle hover:shadow-card transition-all flex flex-col justify-between flex-1">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B5563C] block mb-1">
-                      Pure Mineral Sweetener
-                    </span>
-                    <h4 className="font-serif font-bold text-lg text-[#2B241D]">
-                      Organic Palm Jaggery (Karupatti)
-                    </h4>
-                    <p className="text-xs text-stone-600 mt-1 line-clamp-2">
-                      Handcrafted from fresh wild palmyra palm sap. High natural iron & magnesium without sulfur.
-                    </p>
-                  </div>
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-[#E8DFD3]">
-                    <img
-                      src="https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?auto=format&fit=crop&w=200&q=80"
-                      alt="Palm Jaggery"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-[#E8DFD3]/80 flex items-center justify-between">
-                  <div>
-                    <span className="text-lg font-bold font-sans text-[#2B241D]">₹260</span>
-                    <span className="text-xs text-stone-400 line-through ml-1.5">₹310</span>
-                  </div>
-                  <Link
-                    to="/product/organic-palm-jaggery-karupatti"
-                    className="text-xs font-bold text-[#B5563C] hover:text-[#9E442B] flex items-center gap-1"
-                  >
-                    <span>Shop Jaggery</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Stacked Tile 2: Vedic A2 Ghee */}
-              <div className="bg-[#FAF6EF] rounded-3xl p-6 border border-[#E8DFD3] shadow-subtle hover:shadow-card transition-all flex flex-col justify-between flex-1">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B5563C] block mb-1">
-                      Ancient Bilona Sanskar
-                    </span>
-                    <h4 className="font-serif font-bold text-lg text-[#2B241D]">
-                      Vedic A2 Cultured Gir Cow Ghee
-                    </h4>
-                    <p className="text-xs text-stone-600 mt-1 line-clamp-2">
-                      Hand-churned from curd of grass-fed Gir cows using wooden bilonas. Granular texture and divine aroma.
-                    </p>
-                  </div>
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 border border-[#E8DFD3]">
-                    <img
-                      src="https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=200&q=80"
-                      alt="Vedic A2 Ghee"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-[#E8DFD3]/80 flex items-center justify-between">
-                  <div>
-                    <span className="text-lg font-bold font-sans text-[#2B241D]">₹980</span>
-                    <span className="text-xs text-stone-400 line-through ml-1.5">₹1,150</span>
-                  </div>
-                  <Link
-                    to="/product/vedic-a2-bilona-cow-ghee"
-                    className="text-xs font-bold text-[#B5563C] hover:text-[#9E442B] flex items-center gap-1"
-                  >
-                    <span>Shop A2 Ghee</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          7. CUSTOMER REVIEWS (3-Card Testimonial Row per Wireframe)
-      ========================================================================== */}
-      <section className="py-20 bg-[#FAF6EF] border-b border-[#E8DFD3]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader
-            badge="Verified Customers"
-            title="Customer Reviews"
-            subtitle="Real experiences from home chefs, clinical nutritionists, and families cooking with ShreeKrishna Organics."
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((t) => (
-              <div
-                key={t.id}
-                className="bg-white p-7 rounded-3xl border border-[#E8DFD3] flex flex-col justify-between shadow-subtle hover:shadow-card transition-all"
-              >
-                <div>
-                  {/* 5 Star Rating */}
-                  <div className="flex text-[#C68A2E] mb-3">
-                    {[...Array(t.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-[#C68A2E]" />
-                    ))}
-                  </div>
-
-                  <p className="text-xs sm:text-sm text-stone-700 font-sans italic leading-relaxed mb-6">
-                    "{t.comment}"
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-[#E8DFD3] flex items-center gap-3.5">
-                  <img
-                    src={t.avatar}
-                    alt={t.name}
-                    className="w-11 h-11 rounded-full object-cover border border-[#E8DFD3]"
-                  />
-                  <div>
-                    <h5 className="font-bold text-xs text-[#2B241D]">{t.name}</h5>
-                    <p className="text-[11px] text-stone-500">{t.role}</p>
-                    <span className="text-[10px] text-[#B5563C] font-semibold block mt-0.5">
-                      ✓ Verified Buyer • {t.product}
-                    </span>
-                  </div>
-                </div>
               </div>
             ))}
           </div>
 
-          {/* Stats Bar */}
-          <div className="mt-14 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-            {brandStats.map((stat, idx) => (
-              <div key={idx} className="bg-white border border-[#E8DFD3] rounded-2xl p-6 shadow-subtle">
-                <span className="font-serif text-3xl sm:text-4xl font-bold text-[#B5563C] block mb-1">
-                  {stat.value}
-                </span>
-                <span className="text-xs sm:text-sm text-stone-600 font-medium font-sans">
-                  {stat.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* =========================================================================
-          8. FINAL CALL TO ACTION BANNER
-      ========================================================================== */}
-      <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#2B241D] rounded-3xl p-8 sm:p-12 lg:p-16 text-center text-[#FAF6EF] shadow-2xl relative overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#B5563C]/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#C68A2E]/20 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative max-w-2xl mx-auto space-y-6">
-              <span className="text-xs uppercase tracking-widest text-[#C68A2E] font-bold">
-                Experience The Organic Difference
-              </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-white leading-tight">
-                Bring pure tradition into your family kitchen.
-              </h2>
-              <p className="text-sm sm:text-base text-stone-300">
-                Switch to authentic wood-pressed oils, pure palm jaggery, and Vedic A2 ghee. Free delivery on orders over ₹999. Use promo code <strong className="text-[#FAF6EF] bg-[#B5563C] px-2 py-0.5 rounded font-mono font-bold">SHREEKRISHNA10</strong> for 10% off your first order.
-              </p>
-
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button
-                  to="/shop"
-                  variant="primary"
-                  size="lg"
-                  icon={ArrowRight}
-                  iconPosition="right"
-                  className="w-full sm:w-auto font-semibold shadow-lg shadow-[#B5563C]/30"
-                >
-                  Explore All Products
-                </Button>
-                <Button
-                  to="/contact"
-                  variant="secondary"
-                  size="lg"
-                  className="w-full sm:w-auto bg-transparent text-white border-white/30 hover:bg-white/10"
-                >
-                  Have Questions? Talk to Us
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Media Lightbox Modal */}
-      {selectedMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-[#FAF6EF] rounded-3xl max-w-2xl w-full border border-[#E8DFD3] shadow-2xl overflow-hidden relative text-[#2B241D]">
+          <div className="flex justify-center items-center gap-4 mt-2">
             <button
-              onClick={() => setSelectedMedia(null)}
-              className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-black/40 text-white hover:bg-black transition-colors cursor-pointer"
-              aria-label="Close media preview"
+              type="button"
+              onClick={() => scrollReviews("left")}
+              aria-label="Previous customer reviews"
+              className="w-10 h-10 rounded-full border-2 border-[#177564] text-[#177564] flex items-center justify-center hover:bg-[#177564] hover:text-white active:scale-95 transition-all duration-200"
             >
-              <X className="w-5 h-5" />
+              <ChevronLeft size={17} />
             </button>
 
-            <div className="relative aspect-video bg-black">
-              <img
-                src={selectedMedia.thumbnail}
-                alt={selectedMedia.title}
-                className="w-full h-full object-cover opacity-90"
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-[#B5563C] text-white flex items-center justify-center shadow-2xl mb-3 animate-pulse">
-                  <Play className="w-7 h-7 fill-white ml-1" />
-                </div>
-                <span className="text-xs font-mono bg-black/60 px-3 py-1 rounded-full">{selectedMedia.type} • {selectedMedia.duration}</span>
-              </div>
+            <div className="flex items-center gap-[6px]">
+              {REVIEWS.map((_, index) => (
+                <span
+                  key={index}
+                  className={`w-2 h-2 rounded-full ${
+                    index === 2 ? "bg-[#287b6c]" : "bg-gray-300"
+                  }`}
+                />
+              ))}
             </div>
 
-            <div className="p-6 sm:p-8 space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#B5563C]">
-                {selectedMedia.subtitle}
-              </span>
-              <h3 className="font-serif font-bold text-2xl text-[#2B241D]">
-                {selectedMedia.title}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-                {selectedMedia.description}
-              </p>
-
-              <div className="pt-4 flex justify-between items-center border-t border-[#E8DFD3]">
-                <span className="text-xs text-stone-500">ShreeKrishna Organics Heritage Video Archive</span>
-                <Button
-                  to="/about"
-                  onClick={() => setSelectedMedia(null)}
-                  variant="primary"
-                  size="sm"
-                  icon={ArrowRight}
-                  iconPosition="right"
-                >
-                  Our Process
-                </Button>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => scrollReviews("right")}
+              aria-label="Next customer reviews"
+              className="w-10 h-10 rounded-full border-2 border-[#177564] text-[#177564] flex items-center justify-center hover:bg-[#177564] hover:text-white active:scale-95 transition-all duration-200"
+            >
+              <ChevronRight size={17} />
+            </button>
           </div>
         </div>
-      )}
+      </section>
 
-    </div>
+      
+      
+
+    </main>
+
   );
 }
