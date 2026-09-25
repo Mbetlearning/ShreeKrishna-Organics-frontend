@@ -39,74 +39,56 @@ import LoadingSpinner from "../components/LoadingSpinner";
 \\========================================================= */
 
 const HERO_SLIDES = [
-
   {
-
     id: 1,
-
     image: "/images/wood-pressed-oils-hero.png",
-
     smallTitle: "100% PURE & TRADITIONAL",
-
     title: "Wood-Pressed Oils",
-
     subtitle: "Purity You Can Taste",
-
     description:
-
       "Traditionally extracted at low temperature to preserve natural nutrition, aroma and authentic taste.",
-
     button: "SHOP NOW",
-
     link: "/wood-pressed-oils",
-
   },
 
   {
-
-  id: 2,
-
-  image: "/images/shreekrishna-ghee.png",
-
-  smallTitle: "TRADITIONALLY PREPARED",
-
-  title: "Pure A2 Cow Ghee",
-
-  subtitle: "Golden Goodness For Your Family",
-
-  description:
-
-    "Made using traditional methods for rich aroma, authentic flavour and wholesome goodness.",
-
-  button: "EXPLORE GHEE",
-
-  link: "/shop?category=supplements",
-
-},
+    id: 2,
+    image: "/images/shreekrishna-ghee.png",
+    smallTitle: "TRADITIONALLY PREPARED",
+    title: "Pure A2 Cow Ghee",
+    subtitle: "Golden Goodness For Your Family",
+    description:
+      "Made using traditional methods for rich aroma, authentic flavour and wholesome goodness.",
+    button: "EXPLORE GHEE",
+    link: "/a2-ghee",
+  },
 
   {
+    id: 3,
+    image: "/images/health-supplements-hero2.png",
+    smallTitle: "NATURAL NUTRITION FOR A HEALTHIER TOMORROW",
+    title: "Health Supplements",
+    subtitle: "Pure Nutrition For A Stronger You",
+    description:
+      "Naturally sourced supplements to support immunity, energy, digestion and overall well-being.",
+    button: "SHOP NOW",
+    link: "/health-supplements",
+  },
 
-  id: 3,
-
-  image: "/images/health-supplements-hero.png",
-
-  smallTitle: "NATURAL NUTRITION FOR A HEALTHIER TOMORROW",
-
-  title: "Health Supplements",
-
-  subtitle: "Pure Nutrition For A Stronger You",
-
-  description:
-
-    "Naturally sourced supplements to support immunity, energy, digestion and overall well-being.",
-
-  button: "SHOP NOW",
-
-  link: "/health-supplements",
-
-},
-
+  // 4TH HERO SLIDE - JAGGERY
+  {
+    id: 4,
+    image: "/images/jaggery-banner-01.png",
+    smallTitle: "PURE • NATURAL • TRADITIONAL",
+    title: "Natural Jaggery",
+    subtitle: "Traditional Sweetness, Naturally",
+    description:
+      "Traditionally prepared jaggery with authentic taste and natural goodness for your family.",
+    button: "EXPLORE JAGGERY",
+    link: "/jaggery",
+  },
 ];
+
 
 /* =========================================================
 
@@ -575,26 +557,14 @@ export default function Home() {
   ======================================================= */
 
   useEffect(() => {
+  const timer = setInterval(() => {
+    setCurrentSlide((current) => {
+      return (current + 1) % HERO_SLIDES.length;
+    });
+  }, 6000);
 
-    const timer = setInterval(() => {
-
-      setCurrentSlide(
-
-        (current) =>
-
-          (current + 1) %
-
-          HERO_SLIDES.length
-
-      );
-
-    }, 6000);
-
-    return () =>
-
-      clearInterval(timer);
-
-  }, []);
+  return () => clearInterval(timer);
+}, []);
 
   /* =======================================================
 
