@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { Link } from "react-router-dom";
 
-
-
 import {
 
   ChevronLeft,
@@ -28,23 +26,17 @@ import {
 
 } from "lucide-react";
 
-
-
 import { productService } from "../services/productService";
 
 import ProductCard from "../components/ProductCard";
 
 import LoadingSpinner from "../components/LoadingSpinner";
 
-
-
 /* =========================================================
 
    HERO SLIDES
 
-\========================================================= */
-
-
+\\========================================================= */
 
 const HERO_SLIDES = [
 
@@ -70,8 +62,6 @@ const HERO_SLIDES = [
 
   },
 
-
-
   {
 
   id: 2,
@@ -94,31 +84,35 @@ const HERO_SLIDES = [
 
 },
 
-
-
   {
+
   id: 3,
+
   image: "/images/health-supplements-hero.png",
+
   smallTitle: "NATURAL NUTRITION FOR A HEALTHIER TOMORROW",
+
   title: "Health Supplements",
+
   subtitle: "Pure Nutrition For A Stronger You",
+
   description:
+
     "Naturally sourced supplements to support immunity, energy, digestion and overall well-being.",
+
   button: "SHOP NOW",
+
   link: "/health-supplements",
+
 },
 
 ];
-
-
 
 /* =========================================================
 
    CATEGORIES
 
-\========================================================= */
-
-
+\\========================================================= */
 
 const CATEGORIES = [
 
@@ -132,8 +126,6 @@ const CATEGORIES = [
 
   },
 
-
-
   {
 
     name: "Oils",
@@ -143,8 +135,6 @@ const CATEGORIES = [
     link: "/shop?category=wood-pressed",
 
   },
-
-
 
   {
 
@@ -156,8 +146,6 @@ const CATEGORIES = [
 
   },
 
-
-
   {
 
     name: "Jaggery",
@@ -168,8 +156,6 @@ const CATEGORIES = [
 
   },
 
-
-
   {
 
     name: "Combos",
@@ -179,8 +165,6 @@ const CATEGORIES = [
     link: "/shop?category=other",
 
   },
-
-
 
   {
 
@@ -194,15 +178,11 @@ const CATEGORIES = [
 
 ];
 
-
-
 /* =========================================================
 
    WHY CHOOSE
 
-\========================================================= */
-
-
+\\========================================================= */
 
 const BENEFITS = [
 
@@ -218,8 +198,6 @@ const BENEFITS = [
 
   },
 
-
-
   {
 
     icon: Tractor,
@@ -232,8 +210,6 @@ const BENEFITS = [
 
   },
 
-
-
   {
 
     icon: FlaskConical,
@@ -245,8 +221,6 @@ const BENEFITS = [
       "Every product goes through careful quality checks before reaching your family.",
 
   },
-
-
 
   {
 
@@ -262,15 +236,11 @@ const BENEFITS = [
 
 ];
 
-
-
 /* =========================================================
 
    NATIVE INGREDIENTS
 
-\========================================================= */
-
-
+\\========================================================= */
 
 const INGREDIENTS = [
 
@@ -290,8 +260,6 @@ const INGREDIENTS = [
 
   },
 
-
-
   {
 
     title: "What Do We Look For?",
@@ -308,8 +276,6 @@ const INGREDIENTS = [
 
   },
 
-
-
   {
 
     title: "Impurities, Out.",
@@ -325,8 +291,6 @@ const INGREDIENTS = [
       "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=700&q=85",
 
   },
-
-
 
   {
 
@@ -346,15 +310,11 @@ const INGREDIENTS = [
 
 ];
 
-
-
 /* =========================================================
 
    QUALITY CHECKS
 
-\========================================================= */
-
-
+\\========================================================= */
 
 const QUALITY_ITEMS = [
 
@@ -370,8 +330,6 @@ const QUALITY_ITEMS = [
 
   },
 
-
-
   {
 
     title: "Multiple Quality Checks",
@@ -384,8 +342,6 @@ const QUALITY_ITEMS = [
 
   },
 
-
-
   {
 
     title: "Traditional Processing",
@@ -397,8 +353,6 @@ const QUALITY_ITEMS = [
     icon: "⚙️",
 
   },
-
-
 
   {
 
@@ -414,15 +368,11 @@ const QUALITY_ITEMS = [
 
 ];
 
-
-
 /* =========================================================
 
    RAW MATERIAL — POSTERS & VIDEOS
 
-\========================================================= */
-
-
+\\========================================================= */
 
 const RAW_MATERIAL_MEDIA = [
 
@@ -436,15 +386,11 @@ const RAW_MATERIAL_MEDIA = [
 
 ];
 
-
-
 /* =========================================================
 
    CUSTOMER REVIEWS
 
-\========================================================= */
-
-
+\\========================================================= */
 
 const REVIEWS = [
 
@@ -534,19 +480,13 @@ const REVIEWS = [
 
 ];
 
-
-
 /* =========================================================
 
    HOME COMPONENT
 
-\========================================================= */
-
-
+\\========================================================= */
 
 export default function Home() {
-
-
 
   /* =======================================================
 
@@ -554,25 +494,17 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   const [featuredProducts, setFeaturedProducts] =
 
     useState([]);
-
-
 
   const [loading, setLoading] =
 
     useState(true);
 
-
-
   const [currentSlide, setCurrentSlide] =
 
     useState(0);
-
-
 
   /* =======================================================
 
@@ -580,13 +512,15 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   const productScrollRef = useRef(null);
 
   const reviewScrollRef = useRef(null);
-
-
+  const benefitsScrollRef = useRef(null);
+  const benefitsDirectionRef = useRef(1);
+  const ingredientsScrollRef = useRef(null);
+  const qualityScrollRef = useRef(null);
+  const rawMaterialScrollRef = useRef(null);
+  const ingredientsDirectionRef = useRef(1);
 
   /* =======================================================
 
@@ -594,25 +528,15 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   useEffect(() => {
-
-
 
     async function loadProducts() {
 
-
-
       try {
-
-
 
         const data =
 
           await productService.getFeaturedProducts();
-
-
 
         setFeaturedProducts(
 
@@ -620,11 +544,7 @@ export default function Home() {
 
         );
 
-
-
       } catch (error) {
-
-
 
         console.error(
 
@@ -634,33 +554,19 @@ export default function Home() {
 
         );
 
-
-
         setFeaturedProducts([]);
-
-
 
       } finally {
 
-
-
         setLoading(false);
-
-
 
       }
 
     }
 
-
-
     loadProducts();
 
-
-
   }, []);
-
-
 
   /* =======================================================
 
@@ -668,15 +574,9 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   useEffect(() => {
 
-
-
     const timer = setInterval(() => {
-
-
 
       setCurrentSlide(
 
@@ -688,21 +588,13 @@ export default function Home() {
 
       );
 
-
-
     }, 6000);
-
-
 
     return () =>
 
       clearInterval(timer);
 
-
-
   }, []);
-
-
 
   /* =======================================================
 
@@ -710,13 +602,9 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   const slide =
 
     HERO_SLIDES[currentSlide];
-
-
 
   /* =======================================================
 
@@ -724,11 +612,7 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   const nextSlide = () => {
-
-
 
     setCurrentSlide(
 
@@ -740,11 +624,7 @@ export default function Home() {
 
     );
 
-
-
   };
-
-
 
   /* =======================================================
 
@@ -752,11 +632,7 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   const previousSlide = () => {
-
-
 
     setCurrentSlide(
 
@@ -768,11 +644,7 @@ export default function Home() {
 
     );
 
-
-
   };
-
-
 
   /* =======================================================
 
@@ -780,19 +652,13 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   const scrollProducts = (direction) => {
-
-
 
     if (!productScrollRef.current) {
 
       return;
 
     }
-
-
 
     productScrollRef.current.scrollBy({
 
@@ -804,17 +670,11 @@ export default function Home() {
 
           : -900,
 
-
-
       behavior: "smooth",
 
     });
 
-
-
   };
-
-
 
   /* =======================================================
 
@@ -822,13 +682,9 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   const scrollReviews = (direction) => {
 
     if (!reviewScrollRef.current) return;
-
-
 
     reviewScrollRef.current.scrollBy({
 
@@ -840,7 +696,233 @@ export default function Home() {
 
   };
 
+  /* =======================================================
+     BENEFITS SCROLL
+  ======================================================= */
 
+  const scrollBenefits = (direction) => {
+    if (!benefitsScrollRef.current) return;
+
+    benefitsScrollRef.current.scrollBy({
+      left: direction === "right" ? 360 : -360,
+      behavior: "smooth",
+    });
+  };
+
+  /* =======================================================
+     BENEFITS AUTO SLIDE - FORWARD / BACKWARD
+  ======================================================= */
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const container = benefitsScrollRef.current;
+      if (!container) return;
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) return;
+
+      const atEnd = container.scrollLeft >= maxScroll - 10;
+      const atStart = container.scrollLeft <= 10;
+
+      if (atEnd) {
+        benefitsDirectionRef.current = -1;
+      } else if (atStart) {
+        benefitsDirectionRef.current = 1;
+      }
+
+      const step = Math.max(300, container.clientWidth * 0.32);
+
+      container.scrollBy({
+        left: step * benefitsDirectionRef.current,
+        behavior: "smooth",
+      });
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  /* =======================================================
+     INGREDIENTS SCROLL
+  ======================================================= */
+
+  const scrollIngredients = (direction) => {
+    if (!ingredientsScrollRef.current) return;
+
+    ingredientsScrollRef.current.scrollBy({
+      left: direction === "right" ? 330 : -330,
+      behavior: "smooth",
+    });
+  };
+
+  /* =======================================================
+     INGREDIENTS AUTO SLIDE - FORWARD ONLY
+  ======================================================= */
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const container = ingredientsScrollRef.current;
+      if (!container) return;
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) return;
+
+      const firstCard = container.firstElementChild;
+      const step = firstCard
+        ? firstCard.getBoundingClientRect().width + 20
+        : 330;
+
+      const atEnd = container.scrollLeft >= maxScroll - 10;
+
+      if (atEnd) {
+        container.scrollTo({
+          left: 0,
+          behavior: "auto",
+        });
+        return;
+      }
+
+      container.scrollBy({
+        left: step,
+        behavior: "smooth",
+      });
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  /* =======================================================
+     QUALITY AUTO SLIDE - LEFT / FORWARD ONLY
+  ======================================================= */
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const container = qualityScrollRef.current;
+      if (!container) return;
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) return;
+
+      const firstCard = container.firstElementChild;
+      const step = firstCard
+        ? firstCard.getBoundingClientRect().width + 20
+        : 330;
+
+      const atEnd = container.scrollLeft >= maxScroll - 10;
+
+      if (atEnd) {
+        container.scrollTo({
+          left: 0,
+          behavior: "auto",
+        });
+        return;
+      }
+
+      container.scrollBy({
+        left: step,
+        behavior: "smooth",
+      });
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  /* =======================================================
+     RAW MATERIAL AUTO SLIDE - LEFT / FORWARD ONLY
+  ======================================================= */
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const container = rawMaterialScrollRef.current;
+      if (!container) return;
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) return;
+
+      const firstCard = container.firstElementChild;
+      const step = firstCard
+        ? firstCard.getBoundingClientRect().width + 20
+        : 330;
+
+      const atEnd = container.scrollLeft >= maxScroll - 10;
+
+      if (atEnd) {
+        container.scrollTo({
+          left: 0,
+          behavior: "auto",
+        });
+        return;
+      }
+
+      container.scrollBy({
+        left: step,
+        behavior: "smooth",
+      });
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const scrollQuality = (direction) => {
+    const container = qualityScrollRef.current;
+    if (!container) return;
+
+    const firstCard = container.firstElementChild;
+    const step = firstCard ? firstCard.getBoundingClientRect().width + 20 : 330;
+
+    container.scrollBy({
+      left: direction === "left" ? -step : step,
+      behavior: "smooth",
+    });
+  };
+
+  const scrollRawMaterial = (direction) => {
+    const container = rawMaterialScrollRef.current;
+    if (!container) return;
+
+    const firstCard = container.firstElementChild;
+    const step = firstCard ? firstCard.getBoundingClientRect().width + 20 : 330;
+
+    container.scrollBy({
+      left: direction === "left" ? -step : step,
+      behavior: "smooth",
+    });
+  };
+
+  /* =======================================================
+     CUSTOMER REVIEWS AUTO SLIDE - LEFT / FORWARD ONLY
+  ======================================================= */
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const container = reviewScrollRef.current;
+      if (!container) return;
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 0) return;
+
+      const firstCard = container.firstElementChild;
+      const step = firstCard
+        ? firstCard.getBoundingClientRect().width + 20
+        : 350;
+
+      const atEnd = container.scrollLeft >= maxScroll - 10;
+
+      if (atEnd) {
+        container.scrollTo({
+          left: 0,
+          behavior: "auto",
+        });
+        return;
+      }
+
+      container.scrollBy({
+        left: step,
+        behavior: "smooth",
+      });
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, []);
 
   /* =======================================================
 
@@ -848,23 +930,15 @@ export default function Home() {
 
   ======================================================= */
 
-
-
   return (
 
-
-
     <main className="min-h-screen bg-white">
-
-
 
       {/* =====================================================
 
           HERO SECTION
 
       ===================================================== */}
-
-
 
       <section
 
@@ -882,8 +956,6 @@ export default function Home() {
 
       >
 
-
-
         <div
 
           className="
@@ -898,11 +970,7 @@ export default function Home() {
 
         >
 
-
-
           {/* HERO IMAGE */}
-
-
 
           <img
 
@@ -928,11 +996,7 @@ export default function Home() {
 
           />
 
-
-
           {/* IMAGE OVERLAY */}
-
-
 
           <div
 
@@ -954,11 +1018,7 @@ export default function Home() {
 
           />
 
-
-
           {/* HERO CONTENT */}
-
-
 
           <div
 
@@ -986,11 +1046,7 @@ export default function Home() {
 
           >
 
-
-
             <div className="max-w-2xl">
-
-
 
               <span
 
@@ -1024,8 +1080,6 @@ export default function Home() {
 
               </span>
 
-
-
               <h1
 
                 className="
@@ -1052,8 +1106,6 @@ export default function Home() {
 
               </h1>
 
-
-
               <h2
 
                 className="
@@ -1075,8 +1127,6 @@ export default function Home() {
                 {slide.subtitle}
 
               </h2>
-
-
 
               <p
 
@@ -1101,8 +1151,6 @@ export default function Home() {
                 {slide.description}
 
               </p>
-
-
 
               <Link
 
@@ -1140,25 +1188,15 @@ export default function Home() {
 
                 {slide.button}
 
-
-
                 <ShoppingCart size={19} />
 
               </Link>
 
-
-
             </div>
-
-
 
           </div>
 
-
-
           {/* PREVIOUS BUTTON */}
-
-
 
           <button
 
@@ -1204,11 +1242,7 @@ export default function Home() {
 
           </button>
 
-
-
           {/* NEXT BUTTON */}
-
-
 
           <button
 
@@ -1254,11 +1288,7 @@ export default function Home() {
 
           </button>
 
-
-
           {/* HERO DOTS */}
-
-
 
           <div
 
@@ -1280,13 +1310,9 @@ export default function Home() {
 
           >
 
-
-
             {HERO_SLIDES.map(
 
               (item, index) => (
-
-
 
                 <button
 
@@ -1314,8 +1340,6 @@ export default function Home() {
 
                     transition-all
 
-
-
                     ${
 
                       index === currentSlide
@@ -1330,33 +1354,21 @@ export default function Home() {
 
                 />
 
-
-
               )
 
             )}
 
-
-
           </div>
-
-
 
         </div>
 
-
-
       </section>
-
-
 
       {/* =====================================================
 
           WELCOME + CATEGORIES
 
       ===================================================== */}
-
-
 
       <section
 
@@ -1381,8 +1393,6 @@ export default function Home() {
         "
 
       >
-
-
 
         <div
 
@@ -1416,8 +1426,6 @@ export default function Home() {
 
         />
 
-
-
         <div
 
           className="
@@ -1446,8 +1454,6 @@ export default function Home() {
 
         />
 
-
-
         <div
 
           className="
@@ -1466,11 +1472,7 @@ export default function Home() {
 
         >
 
-
-
           <div className="text-center">
-
-
 
             <h2
 
@@ -1494,8 +1496,6 @@ export default function Home() {
 
             </h2>
 
-
-
             <p
 
               className="
@@ -1518,15 +1518,9 @@ export default function Home() {
 
             </p>
 
-
-
           </div>
 
-
-
           {/* CATEGORIES */}
-
-
 
           <div
 
@@ -1554,13 +1548,9 @@ export default function Home() {
 
           >
 
-
-
             {CATEGORIES.map(
 
               (category) => (
-
-
 
                 <Link
 
@@ -1586,15 +1576,11 @@ export default function Home() {
 
                 >
 
-
-
                   <div className="text-3xl transition-transform duration-300 group-hover:scale-110">
 
                     {category.icon}
 
                   </div>
-
-
 
                   <p
 
@@ -1616,11 +1602,7 @@ export default function Home() {
 
                   </p>
 
-
-
                   {category.name === "All" && (
-
-
 
                     <div
 
@@ -1638,29 +1620,17 @@ export default function Home() {
 
                     />
 
-
-
                   )}
 
-
-
                 </Link>
-
-
 
               )
 
             )}
 
-
-
           </div>
 
-
-
         </div>
-
-
 
         <style>{`
 
@@ -1675,8 +1645,6 @@ export default function Home() {
             100% { left: 120%; opacity: 0; }
 
           }
-
-
 
           .welcome-golden-text {
 
@@ -1714,8 +1682,6 @@ export default function Home() {
 
           }
 
-
-
           @keyframes welcomeGoldenTextMove {
 
             0% { background-position: 150% center; }
@@ -1726,19 +1692,13 @@ export default function Home() {
 
         `}</style>
 
-
-
       </section>
-
-
 
       {/* =====================================================
 
           FEATURED PRODUCTS
 
       ===================================================== */}
-
-
 
       <section
 
@@ -1756,31 +1716,17 @@ export default function Home() {
 
       >
 
-
-
         <div className="relative">
-
-
 
           {loading ? (
 
-
-
             <div className="py-20">
-
-
 
               <LoadingSpinner />
 
-
-
             </div>
 
-
-
           ) : featuredProducts.length === 0 ? (
-
-
 
             <p
 
@@ -1800,15 +1746,9 @@ export default function Home() {
 
             </p>
 
-
-
           ) : (
 
-
-
             <>
-
-
 
               <div
 
@@ -1834,13 +1774,9 @@ export default function Home() {
 
               >
 
-
-
                 {featuredProducts.map(
 
                   (product) => (
-
-
 
                     <div
 
@@ -1858,33 +1794,21 @@ export default function Home() {
 
                     >
 
-
-
                       <ProductCard
 
                         product={product}
 
                       />
 
-
-
                     </div>
-
-
 
                   )
 
                 )}
 
-
-
               </div>
 
-
-
               {/* PRODUCT LEFT */}
-
-
 
               <button
 
@@ -1936,11 +1860,7 @@ export default function Home() {
 
               </button>
 
-
-
               {/* PRODUCT RIGHT */}
-
-
 
               <button
 
@@ -1992,27 +1912,15 @@ export default function Home() {
 
               </button>
 
-
-
             </>
-
-
 
           )}
 
-
-
         </div>
-
-
 
         {/* SEE ALL */}
 
-
-
         <div className="text-center mt-5">
-
-
 
           <Link
 
@@ -2052,243 +1960,61 @@ export default function Home() {
 
             See All
 
-
-
             <span>→</span>
 
           </Link>
 
-
-
         </div>
 
-
-
       </section>
-
-
 
       {/* =====================================================
-
           WHY CHOOSE
-
       ===================================================== */}
 
-
-
-      <section
-
-        className="
-
-          bg-[#fcfdfb]
-
-          py-20
-
-        "
-
-      >
-
-
-
-        <div
-
-          className="
-
-            max-w-7xl
-
-            mx-auto
-
-            px-6
-
-          "
-
-        >
-
-
-
-          <h2
-
-            className="
-
-              text-center
-
-              text-3xl
-
-              lg:text-4xl
-
-              font-serif
-
-              font-bold
-
-              text-[#075e4d]
-
-              mb-16
-
-            "
-
-          >
-
+      <section className="bg-[#fcfdfb] py-20 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#075e4d] mb-12">
             Why Choose ShreeKrishna Organics?
-
           </h2>
 
-
-
-          <div
-
-            className="
-
-              grid
-
-              grid-cols-1
-
-              sm:grid-cols-2
-
-              lg:grid-cols-4
-
-              gap-12
-
-            "
-
-          >
-
-
-
-            {BENEFITS.map(
-
-              (benefit, index) => {
-
-
-
+          <div className="relative">
+            <div
+              ref={benefitsScrollRef}
+              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {BENEFITS.map((benefit, index) => {
                 const Icon = benefit.icon;
-
-
-
                 return (
-
-
-
                   <div
-
                     key={index}
-
-                    className="text-center"
-
+                    className="group min-w-[85%] sm:min-w-[47%] lg:min-w-[31%] snap-start text-center px-5 py-7 rounded-2xl bg-white border border-[#e5eee9] shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
                   >
-
-
-
-                    <div
-
-                      className="
-
-                        flex
-
-                        justify-center
-
-                        mb-7
-
-                      "
-
-                    >
-
-
-
-                      <Icon
-
-                        size={64}
-
-                        strokeWidth={1.4}
-
-                        className="text-[#176c58]"
-
-                      />
-
-
-
+                    <div className="flex justify-center mb-7">
+                      <Icon size={64} strokeWidth={1.4} className="text-[#176c58] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3" />
                     </div>
-
-
-
-                    <h3
-
-                      className="
-
-                        font-serif
-
-                        font-bold
-
-                        text-xl
-
-                        text-[#075e4d]
-
-                      "
-
-                    >
-
-                      {benefit.title}
-
-                    </h3>
-
-
-
-                    <p
-
-                      className="
-
-                        mt-3
-
-                        text-gray-600
-
-                        leading-relaxed
-
-                        max-w-[270px]
-
-                        mx-auto
-
-                      "
-
-                    >
-
-                      {benefit.text}
-
-                    </p>
-
-
-
+                    <h3 className="font-serif font-bold text-xl text-[#075e4d]">{benefit.title}</h3>
+                    <p className="mt-3 text-gray-600 leading-relaxed max-w-[270px] mx-auto">{benefit.text}</p>
                   </div>
-
-
-
                 );
+              })}
+            </div>
 
-
-
-              }
-
-            )}
-
-
-
+            <button type="button" onClick={() => scrollBenefits("left")} aria-label="Previous benefits" className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#dce8e2] text-[#075e4d] shadow-md flex items-center justify-center hover:bg-[#075e4d] hover:text-white active:scale-95 transition-all duration-300">
+              <ChevronLeft size={20} />
+            </button>
+            <button type="button" onClick={() => scrollBenefits("right")} aria-label="Next benefits" className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#dce8e2] text-[#075e4d] shadow-md flex items-center justify-center hover:bg-[#075e4d] hover:text-white active:scale-95 transition-all duration-300">
+              <ChevronRight size={20} />
+            </button>
           </div>
-
-
-
         </div>
-
-
-
       </section>
-
-
 
       {/* =====================================================
 
           NATIVE INGREDIENTS
 
       ===================================================== */}
-
-
 
       <section
 
@@ -2301,8 +2027,6 @@ export default function Home() {
         "
 
       >
-
-
 
         <div
 
@@ -2317,8 +2041,6 @@ export default function Home() {
           "
 
         >
-
-
 
           <h2
 
@@ -2346,215 +2068,59 @@ export default function Home() {
 
           </h2>
 
-
-
-          <div
-
-            className="
-
-              grid
-
-              grid-cols-1
-
-              sm:grid-cols-2
-
-              lg:grid-cols-4
-
-              gap-5
-
-            "
-
-          >
-
-
-
-            {INGREDIENTS.map(
-
-              (item, index) => (
-
-
-
+          <div className="relative">
+            <div
+              ref={ingredientsScrollRef}
+              className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {INGREDIENTS.map((item, index) => (
                 <div
-
                   key={index}
-
-                  className="
-
-                    relative
-
-                    rounded-xl
-
-                    overflow-hidden
-
-                    h-[440px]
-
-                    group
-
-                  "
-
+                  className="relative min-w-[85%] sm:min-w-[47%] lg:min-w-[31%] snap-start rounded-xl overflow-hidden h-[440px] group"
                 >
-
-
-
                   <img
-
                     src={item.image}
-
                     alt={item.title}
-
-                    className="
-
-                      absolute
-
-                      inset-0
-
-                      w-full
-
-                      h-full
-
-                      object-cover
-
-                      group-hover:scale-105
-
-                      transition
-
-                      duration-700
-
-                    "
-
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-700"
                   />
 
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/10 to-black/30" />
 
-
-                  <div
-
-                    className="
-
-                      absolute
-
-                      inset-0
-
-                      bg-gradient-to-b
-
-                      from-black/70
-
-                      via-black/10
-
-                      to-black/30
-
-                    "
-
-                  />
-
-
-
-                  <div
-
-                    className="
-
-                      relative
-
-                      text-center
-
-                      text-white
-
-                      px-5
-
-                      pt-8
-
-                    "
-
-                  >
-
-
-
-                    <h3
-
-                      className="
-
-                        text-2xl
-
-                        font-bold
-
-                      "
-
-                    >
-
-                      {item.title}
-
-                    </h3>
-
-
-
-                    <h4
-
-                      className="
-
-                        text-lg
-
-                        font-semibold
-
-                        mt-1
-
-                      "
-
-                    >
-
-                      {item.subtitle}
-
-                    </h4>
-
-
-
-                    <p
-
-                      className="
-
-                        mt-3
-
-                        text-sm
-
-                      "
-
-                    >
-
-                      {item.description}
-
-                    </p>
-
-
-
+                  <div className="relative text-center text-white px-5 pt-8">
+                    <h3 className="text-2xl font-bold">{item.title}</h3>
+                    <h4 className="text-lg font-semibold mt-1">{item.subtitle}</h4>
+                    <p className="mt-3 text-sm">{item.description}</p>
                   </div>
-
-
-
                 </div>
+              ))}
+            </div>
 
+            <button
+              type="button"
+              onClick={() => scrollIngredients("left")}
+              aria-label="Previous ingredients"
+              className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#ead8ad] text-[#b87425] shadow-md flex items-center justify-center hover:bg-[#b87425] hover:text-white active:scale-95 transition-all duration-300"
+            >
+              <ChevronLeft size={20} />
+            </button>
 
-
-              )
-
-            )}
-
-
-
+            <button
+              type="button"
+              onClick={() => scrollIngredients("right")}
+              aria-label="Next ingredients"
+              className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#ead8ad] text-[#b87425] shadow-md flex items-center justify-center hover:bg-[#b87425] hover:text-white active:scale-95 transition-all duration-300"
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
-
-
 
         </div>
 
-
-
       </section>
-
-
 
       {/* =====================================================
 
           PRODUCT IN FOCUS REMOVED
-
-
 
           Oils section removed
 
@@ -2562,15 +2128,11 @@ export default function Home() {
 
       ===================================================== */}
 
-
-
       {/* =====================================================
 
           QUALITY SECTION
 
       ===================================================== */}
-
-
 
       <section
 
@@ -2583,8 +2145,6 @@ export default function Home() {
         "
 
       >
-
-
 
         <div
 
@@ -2599,8 +2159,6 @@ export default function Home() {
           "
 
         >
-
-
 
           <h2
 
@@ -2628,39 +2186,72 @@ export default function Home() {
 
           </h2>
 
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => scrollQuality("left")}
+              aria-label="Previous quality card"
+              className="absolute left-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
+            >
+              <ChevronLeft size={22} />
+            </button>
 
+            <button
+              type="button"
+              onClick={() => scrollQuality("right")}
+              aria-label="Next quality card"
+              className="absolute right-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
+            >
+              <ChevronRight size={22} />
+            </button>
 
           <div
 
+            ref={qualityScrollRef}
+
             className="
 
-              grid
-
-              grid-cols-1
-
-              sm:grid-cols-2
-
-              lg:grid-cols-4
+              flex
 
               gap-5
+
+              overflow-x-auto
+
+              scroll-smooth
+
+              snap-x
+
+              snap-mandatory
+
+              pb-3
+
+              [scrollbar-width:none]
+
+              [&::-webkit-scrollbar]:hidden
 
             "
 
           >
 
-
-
             {QUALITY_ITEMS.map(
 
               (item, index) => (
-
-
 
                 <div
 
                   key={index}
 
                   className="
+
+                    flex-none
+
+                    w-[85%]
+
+                    sm:w-[47%]
+
+                    lg:w-[31%]
+
+                    snap-start
 
                     bg-[#fff9e9]
 
@@ -2686,8 +2277,6 @@ export default function Home() {
 
                 >
 
-
-
                   <div
 
                     className="
@@ -2703,8 +2292,6 @@ export default function Home() {
                     {item.icon}
 
                   </div>
-
-
 
                   <h3
 
@@ -2726,8 +2313,6 @@ export default function Home() {
 
                   </h3>
 
-
-
                   <p
 
                     className="
@@ -2746,8 +2331,6 @@ export default function Home() {
 
                   </p>
 
-
-
                   <CheckCircle2
 
                     className="
@@ -2762,29 +2345,19 @@ export default function Home() {
 
                   />
 
-
-
                 </div>
-
-
 
               )
 
             )}
 
-
+          </div>
 
           </div>
 
-
-
         </div>
 
-
-
       </section>
-
-
 
       {/* =====================================================
 
@@ -2792,15 +2365,11 @@ export default function Home() {
 
       ===================================================== */}
 
-
-
       <section className="relative overflow-hidden bg-[#f8f4ec] py-20 lg:py-24">
 
         <div className="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#e7c56d]/15 blur-3xl pointer-events-none" />
 
         <div className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-[#075e4d]/10 blur-3xl pointer-events-none" />
-
-
 
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-6">
 
@@ -2828,13 +2397,33 @@ export default function Home() {
 
           </div>
 
+          <div className="relative mt-12">
+            <button
+              type="button"
+              onClick={() => scrollRawMaterial("left")}
+              aria-label="Previous raw material card"
+              className="absolute left-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
+            >
+              <ChevronLeft size={22} />
+            </button>
 
+            <button
+              type="button"
+              onClick={() => scrollRawMaterial("right")}
+              aria-label="Next raw material card"
+              className="absolute right-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
+            >
+              <ChevronRight size={22} />
+            </button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+          <div
+            ref={rawMaterialScrollRef}
+            className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
 
             {RAW_MATERIAL_MEDIA.map((item, index) => (
 
-              <article key={index} className="group overflow-hidden rounded-[22px] border border-[#e6dccd] bg-white shadow-[0_8px_24px_rgba(74,54,35,0.08)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_16px_35px_rgba(74,54,35,0.14)]">
+              <article key={index} className="group flex-none w-[85%] sm:w-[47%] lg:w-[31%] snap-start overflow-hidden rounded-[22px] border border-[#e6dccd] bg-white shadow-[0_8px_24px_rgba(74,54,35,0.08)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_16px_35px_rgba(74,54,35,0.14)]">
 
                 <div className="relative h-[215px] overflow-hidden bg-[#ece5d9]">
 
@@ -2876,11 +2465,11 @@ export default function Home() {
 
           </div>
 
+          </div>
+
         </div>
 
       </section>
-
-
 
       {/* =====================================================
 
@@ -2888,13 +2477,9 @@ export default function Home() {
 
       ===================================================== */}
 
-
-
       <section className="bg-[#fbfdfb] pt-7 pb-10 overflow-hidden">
 
         <div className="border-t border-gray-300 mx-2 mb-5" />
-
-
 
         <div className="max-w-7xl mx-auto px-4">
 
@@ -2903,8 +2488,6 @@ export default function Home() {
             What Do Our Customers Say
 
           </h2>
-
-
 
           <div
 
@@ -2929,8 +2512,6 @@ export default function Home() {
                   {review.comment}
 
                 </p>
-
-
 
                 <div className="flex items-center gap-4 mt-7">
 
@@ -2962,8 +2543,6 @@ export default function Home() {
 
                   </div>
 
-
-
                   <div>
 
                     <h3 className="font-serif font-bold text-[14px] text-[#173b4d]">
@@ -2971,8 +2550,6 @@ export default function Home() {
                       {review.name}
 
                     </h3>
-
-
 
                     <div className="flex gap-[3px] mt-2">
 
@@ -3002,8 +2579,6 @@ export default function Home() {
 
           </div>
 
-
-
           <div className="flex justify-center items-center gap-4 mt-2">
 
             <button
@@ -3021,8 +2596,6 @@ export default function Home() {
               <ChevronLeft size={17} />
 
             </button>
-
-
 
             <div className="flex items-center gap-[6px]">
 
@@ -3043,8 +2616,6 @@ export default function Home() {
               ))}
 
             </div>
-
-
 
             <button
 
@@ -3068,17 +2639,7 @@ export default function Home() {
 
       </section>
 
-
-
-
-
-
-
-
-
     </main>
-
-
 
   );
 
