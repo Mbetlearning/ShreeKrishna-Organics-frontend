@@ -3,6 +3,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   useLocation,
 } from "react-router-dom";
 
@@ -12,7 +13,6 @@ import { AuthProvider } from "./context/AuthContext";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import ProductDetails from "./pages/ProductDetails";
@@ -53,6 +53,7 @@ import AdminReviews from "./admin/pages/AdminReviews";
 import AdminSettings from "./admin/pages/AdminSettings";
 import AdminHotDeals from "./admin/pages/AdminHotDeals";
 import AdminComboOffers from "./admin/pages/AdminComboOffers";
+import ProtectedRoute from './components/ProtectedRoute';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -105,33 +106,54 @@ function WebsiteLayout() {
   );
 }
 
+
 function AppRoutes() {
   return (
     <Routes>
+      {/* Admin login: public route */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route path="dashboard" element={<AdminDashboard />} />
+      {/* /admin redirects to admin login */}
+      <Route
+        path="/admin"
+        element={<Navigate to="/admin/login" replace />}
+      />
 
-        <Route path="products" element={<AdminProducts />} />
-        <Route path="products/add" element={<AddProduct />} />
-        <Route path="products/edit/:id" element={<EditProduct />} />
+      {/* Protected admin routes */}
+      <Route
+        element={
+          <ProtectedRoute
+            allowedRoles={['ADMIN']}
+            loginPath="/admin/login"
+            fallbackPath="/"
+          />
+        }
+      >
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route path="dashboard" element={<AdminDashboard />} />
 
-        <Route path="hot-deals" element={<AdminHotDeals />} />
-        <Route path="combo-offers" element={<AdminComboOffers />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="products/add" element={<AddProduct />} />
+          <Route path="products/edit/:id" element={<EditProduct />} />
 
-        <Route path="orders" element={<AdminOrders />} />
-        <Route path="customers" element={<AdminCustomers />} />
-        <Route path="blogs" element={<AdminBlogs />} />
-        <Route path="media" element={<AdminMedia />} />
-        <Route path="reviews" element={<AdminReviews />} />
-        <Route path="settings" element={<AdminSettings />} />
+          <Route path="hot-deals" element={<AdminHotDeals />} />
+          <Route path="combo-offers" element={<AdminComboOffers />} />
+
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="customers" element={<AdminCustomers />} />
+          <Route path="blogs" element={<AdminBlogs />} />
+          <Route path="media" element={<AdminMedia />} />
+          <Route path="reviews" element={<AdminReviews />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
       </Route>
 
+      {/* Customer website */}
       <Route path="/*" element={<WebsiteLayout />} />
     </Routes>
   );
 }
+
 
 export default function App() {
   return (
