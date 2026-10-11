@@ -699,7 +699,7 @@ export default function Home() {
       {/* =====================================================
             FEATURED PRODUCTS
         ===================================================== */}
-      <section className="bg-white py-5 border-t border-gray-100">
+        <section className="bg-white pt-3 pb-0 border-t border-gray-100">
         <div className="relative">
           {loading ? (
             <div className="py-20">
@@ -746,30 +746,45 @@ export default function Home() {
           )}
         </div>
         {/* SEE ALL */}
-        <div className="text-center mt-5">
-          <Link
-            to="/shop"
-            className="inline-flex items-center gap-2 border border-[#075e4d] text-[#075e4d] px-7 py-3 rounded-full font-semibold hover:bg-[#075e4d] hover:text-white transition"
-          >
-            See All
-            <span>→</span>
-          </Link>
-        </div>
+       
+{/* SEE ALL BUTTON */}
+
+<div className="mt-4 mb-0 flex justify-center">
+  <Link
+    to="/shop"
+    className="
+      inline-flex items-center justify-center gap-2
+      rounded-full border border-[#075e4d]
+      px-7 py-3
+      font-semibold text-[#075e4d]
+      transition-all duration-300
+      hover:bg-[#075e4d] hover:text-white
+    "
+  >
+    See All
+    <span>→</span>
+  </Link>
+</div>
+
       </section>
       <BulkOrdersBanner />
-      {/* =====================================================
-            WHY CHOOSE
-        ===================================================== */}
-      <section className="bg-[#fcfdfb] py-20 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#075e4d] mb-12">
-            Why Choose ShreeKrishna Organics?
-          </h2>
-          <div className="relative">
-            <div
-              ref={benefitsScrollRef}
-              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
+      
+{/* =====================================================
+    WHY CHOOSE
+===================================================== */}
+
+<section className="bg-[#fcfdfb] pt-5 pb-1 lg:pt-10 lg:pb-4 overflow-hidden">
+  <div className="max-w-7xl mx-auto px-6">
+
+    <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#075e4d] mb-6 lg:mb-10">
+      Why Choose ShreeKrishna Organics?
+    </h2>
+
+    <div className="relative">
+      <div
+        ref={benefitsScrollRef}
+        className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
               {BENEFITS.map((benefit, index) => {
                 const Icon = benefit.icon;
                 return (
@@ -816,11 +831,16 @@ export default function Home() {
       {/* =====================================================
             NATIVE INGREDIENTS
         ===================================================== */}
-      <section className="bg-[#fff5d7] py-20">
-        <div className="max-w-7xl mx-auto px-5">
-          <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#b87425] mb-12">
-            Native Ingredients. No Substitutes.
-          </h2>
+      
+{/* NATIVE INGREDIENTS */}
+
+<section className="bg-[#fff5d7] pt-5 pb-1 lg:pt-10 lg:pb-4">
+  <div className="max-w-7xl mx-auto px-5">
+
+    <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#b87425] mb-7 lg:mb-10">
+      Native Ingredients. No Substitutes.
+    </h2>
+
           <div className="relative">
             <div
               ref={ingredientsScrollRef}
@@ -874,55 +894,91 @@ export default function Home() {
       {/* =====================================================
             QUALITY SECTION
         ===================================================== */}
-      <section className="bg-[#dff5fa] py-20">
-        <div className="max-w-7xl mx-auto px-5">
-          <h2 className="text-center font-serif font-bold text-3xl lg:text-4xl text-[#3193a5] mb-12">
-            Only Perfect Makes The Cut
-          </h2>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => scrollQuality("left")}
-              aria-label="Previous quality card"
-              className="absolute left-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
-            >
-              <ChevronLeft size={22} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollQuality("right")}
-              aria-label="Next quality card"
-              className="absolute right-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
-            >
-              <ChevronRight size={22} />
-            </button>
-            <div
-              ref={qualityScrollRef}
-              className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {QUALITY_ITEMS.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex-none w-[85%] sm:w-[47%] lg:w-[31%] snap-start bg-[#fff9e9] min-h-[390px] rounded-xl p-7 text-center flex flex-col items-center justify-center shadow-sm"
-                >
-                  <div className="text-6xl mb-8">{item.icon}</div>
-                  <h3 className="text-xl lg:text-2xl font-bold text-[#176c58]">
-                    {item.title}
-                  </h3>
-                  <p className="mt-4 text-gray-600 leading-relaxed">
-                    {item.text}
-                  </p>
-                  <CheckCircle2 className="mt-7 text-[#176c58]" size={30} />
-                </div>
-              ))}
+      
+{/* ONLY PERFECT MAKES THE CUT */}
+
+<section className="bg-[#dff5fa] pt-3 pb-4 sm:pt-5 sm:pb-6 lg:pt-8 lg:pb-10">
+  <div className="max-w-7xl mx-auto px-5">
+
+    {/* SECTION HEADING */}
+
+    <h2 className="text-center font-serif font-bold text-3xl lg:text-4xl text-[#3193a5] mb-4 sm:mb-6">
+      Only Perfect Makes The Cut
+    </h2>
+
+    {/* QUALITY CAROUSEL */}
+
+    <div className="relative">
+
+      {/* PREVIOUS BUTTON */}
+
+      <button
+        type="button"
+        onClick={() => scrollQuality("left")}
+        aria-label="Previous quality card"
+        className="absolute left-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
+      >
+        <ChevronLeft size={22} />
+      </button>
+
+      {/* NEXT BUTTON */}
+
+      <button
+        type="button"
+        onClick={() => scrollQuality("right")}
+        aria-label="Next quality card"
+        className="absolute right-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
+      >
+        <ChevronRight size={22} />
+      </button>
+
+      {/* CARDS CONTAINER */}
+
+      <div
+        ref={qualityScrollRef}
+        className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {QUALITY_ITEMS.map((item, index) => (
+          <div
+            key={index}
+            className="flex-none w-[85%] sm:w-[47%] lg:w-[31%] snap-start bg-[#fff9e9] min-h-[320px] sm:min-h-[350px] lg:min-h-[370px] rounded-xl px-6 py-5 text-center flex flex-col items-center justify-center shadow-sm"
+          >
+            {/* ICON */}
+
+            <div className="text-6xl mb-4">
+              {item.icon}
             </div>
+
+            {/* TITLE */}
+
+            <h3 className="text-xl lg:text-2xl font-bold text-[#176c58]">
+              {item.title}
+            </h3>
+
+            {/* DESCRIPTION */}
+
+            <p className="mt-3 text-gray-600 leading-relaxed">
+              {item.text}
+            </p>
+
+            {/* CHECK ICON */}
+
+            <CheckCircle2
+              className="mt-4 text-[#176c58]"
+              size={30}
+            />
           </div>
-        </div>
-      </section>
+        ))}
+      </div>
+
+    </div>
+  </div>
+</section>
+
       {/* =====================================================
             RAW MATERIAL — POSTERS & VIDEOS
         ===================================================== */}
-      <section className="relative overflow-hidden bg-[#f8f4ec] py-20 lg:py-24">
+   <section className="relative overflow-hidden bg-[#f8f4ec] pt-0 pb-6 sm:pt-2 sm:pb-8 lg:pt-6 lg:pb-12">
         <div className="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#e7c56d]/15 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-[#075e4d]/10 blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-6">
