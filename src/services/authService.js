@@ -1,25 +1,37 @@
 
-import { apiRequest } from './api';
+import {
+  apiRequest,
+  AUTH_USER_KEY,
+  AUTH_TOKEN_KEY,
+  clearAuthSession,
+  getValidToken,
+  AUTH_CHANGED_EVENT,
+} from './api';
 
-const AUTH_USER_KEY = 'prakriti_auth_user';
-const AUTH_TOKEN_KEY = 'prakriti_auth_token';
+export const normalizeRole = (role) =>
+  String(role || '')
+    .replace(/^ROLE_/i, '')
+    .toUpperCase();
 
 export const authService = {
   async login(email, password) {
     const data = await apiRequest('/auth/login', {
       method: 'POST',
+      auth: false,
       body: JSON.stringify({
         email: email.trim(),
         password,
       }),
     });
 
-    if (!data.accessToken) {
+    if (!data?.accessToken) {
       throw new Error('Backend did not return an access token.');
     }
 
-    if (data.role !== 'CUSTOMER') {
-      throw new Error('Please sign in using a customer account.');
+    const role = normalizeRole(data.role);
+
+    if (!role) {
+      throw new Error('Backend did not return a user role.');
     }
 
     const user = {
@@ -30,29 +42,31 @@ export const authService = {
         .filter(Boolean)
         .join(' '),
       email: data.email,
-      role: data.role,
+      role,
     };
 
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-    localStorage.setItem(AUTH_TOKEN_KEY, data.accessToken);
+    return {
+      user,
+      token: data.accessToken,
+    };
+  },
 
-    return { user, token: data.accessToken };
+  saveSession({ user, token }) {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
   },
 
   async register(userData) {
-    const parts = userData.name.trim().split(/\s+/);
-
-    if (parts.length < 2) {
-      throw new Error('Please enter your first and last name.');
-    }
-
     const response = await apiRequest('/auth/register', {
       method: 'POST',
+      auth: false,
       body: JSON.stringify({
-        firstName: parts[0],
-        lastName: parts.slice(1).join(' '),
-        email: userData.email.trim(),
-        mobile: (userData.phone || '').replace(/\D/g, ''),
+        firstName: userData.firstName.trim(),
+        lastName: userData.lastName.trim(),
+        email: userData.email.trim().toLowerCase(),
+        mobile: userData.phone.replace(/\D/g, ''),
         password: userData.password,
       }),
     });
@@ -61,29 +75,35 @@ export const authService = {
   },
 
   async logout() {
-    localStorage.removeItem(AUTH_USER_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+    clearAuthSession();
     return true;
   },
 
   getCurrentUser() {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    const token = getValidToken();
     const savedUser = localStorage.getItem(AUTH_USER_KEY);
 
-    if (!token || !savedUser || token.startsWith('jwt_mock_token_')) {
-      localStorage.removeItem(AUTH_USER_KEY);
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      return null;
-    }
+    if (!token || !savedUser) return null;
 
     try {
-      return JSON.parse(savedUser);
+      const user = JSON.parse(savedUser);
+
+      if (!user?.role || !user?.email) {
+        clearAuthSession();
+        return null;
+      }
+
+      return {
+        ...user,
+        role: normalizeRole(user.role),
+      };
     } catch {
+      clearAuthSession();
       return null;
     }
   },
 
   getToken() {
-    return localStorage.getItem(AUTH_TOKEN_KEY);
+    return getValidToken();
   },
 };

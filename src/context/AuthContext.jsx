@@ -2,10 +2,16 @@
 import React, {
   createContext,
   useContext,
+  useEffect,
   useState,
 } from 'react';
 
-import { authService } from '../services/authService';
+import {
+  authService,
+  normalizeRole,
+} from '../services/authService';
+
+import { AUTH_CHANGED_EVENT } from '../services/api';
 import { useToast } from './ToastContext';
 
 const AuthContext = createContext(null);
@@ -19,16 +25,55 @@ export function AuthProvider({ children }) {
 
   const [loading, setLoading] = useState(false);
 
-  const login = async (email, password) => {
+  useEffect(() => {
+    const syncSession = () => {
+      setUser(authService.getCurrentUser());
+    };
+
+    window.addEventListener(AUTH_CHANGED_EVENT, syncSession);
+    window.addEventListener('storage', syncSession);
+    window.addEventListener('focus', syncSession);
+
+    // Periodically detect expiration even without API calls.
+    const interval = window.setInterval(syncSession, 30000);
+
+    return () => {
+      window.removeEventListener(
+        AUTH_CHANGED_EVENT,
+        syncSession
+      );
+      window.removeEventListener('storage', syncSession);
+      window.removeEventListener('focus', syncSession);
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  // Default CUSTOMER preserves existing customer Login.jsx.
+  // Admin Login can call login(email, password, 'ADMIN').
+  const login = async (
+    email,
+    password,
+    expectedRole = 'CUSTOMER'
+  ) => {
     setLoading(true);
 
     try {
       const response = await authService.login(email, password);
 
+      const actualRole = normalizeRole(response.user.role);
+      const requiredRole = normalizeRole(expectedRole);
+
+      if (requiredRole && actualRole !== requiredRole) {
+        throw new Error(
+          `This account cannot sign in to the ${requiredRole.toLowerCase()} portal.`
+        );
+      }
+
+      authService.saveSession(response);
       setUser(response.user);
 
       addToast(
-        `Welcome back, ${response.user.firstName || 'Customer'}!`
+        `Welcome back, ${response.user.firstName || 'User'}!`
       );
 
       return {
@@ -48,18 +93,28 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (userData) => {
-  setLoading(true);
-  try {
-    const response = await authService.register(userData);
-    addToast('Registration successful! Please sign in.');
-    return { success: true, user: response.user };
-  } catch (error) {
-    addToast(error.message || 'Registration failed', 'error');
-    return { success: false, error: error.message };
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+
+    try {
+      const response = await authService.register(userData);
+
+      addToast('Registration successful! Please sign in.');
+
+      return {
+        success: true,
+        user: response.user,
+      };
+    } catch (error) {
+      addToast(error.message || 'Registration failed', 'error');
+
+      return {
+        success: false,
+        error: error.message,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const logout = async () => {
     await authService.logout();
@@ -67,15 +122,24 @@ export function AuthProvider({ children }) {
     addToast('You have been logged out.', 'info');
   };
 
+  const hasRole = (...roles) =>
+    !!user &&
+    roles.some(
+      (role) =>
+        normalizeRole(role) === normalizeRole(user.role)
+    );
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        role: user?.role || null,
         isAuthenticated: !!user,
         loading,
         login,
         register,
         logout,
+        hasRole,
       }}
     >
       {children}
