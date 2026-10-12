@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
-
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -19,52 +15,15 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
 
-    const isAdmin =
-      localStorage.getItem("shreekrishna_admin");
 
-    if (isAdmin === "true") {
-      navigate(
-        "/admin/dashboard",
-        { replace: true }
-      );
-    }
+ const handleSubmit = (e) => {
+  e.preventDefault();
 
-  }, [navigate]);
-
-  const handleSubmit = (e) => {
-
-    e.preventDefault();
-
-    setError("");
-
-    /*
-      TEMPORARY ADMIN LOGIN
-
-      Spring Boot backend तयार झाल्यावर
-      हे API login मध्ये convert करू.
-    */
-
-    if (
-      email === "admin@shreekrishna.com" &&
-      password === "Admin@123"
-    ) {
-
-      localStorage.setItem(
-        "shreekrishna_admin",
-        "true"
-      );
-
-      navigate("/admin/dashboard");
-
-      return;
-    }
-
-    setError(
-      "Invalid admin email or password."
-    );
-  };
+  setError(
+    "Admin backend login is not connected yet. Please contact the developer."
+  );
+};
 
   return (
     <div className="min-h-screen bg-[#F7F3E8] flex items-center justify-center p-5">
@@ -172,13 +131,8 @@ export default function AdminLogin() {
           {/* DEMO INFO */}
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-800">
 
-            Demo Login:
-            <br />
-
-            admin@shreekrishna.com
-            <br />
-
-            Admin@123
+         
+          
 
           </div>
 
