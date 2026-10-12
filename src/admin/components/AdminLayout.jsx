@@ -1,32 +1,16 @@
-import React from "react";
-import {
-  Navigate,
-  Outlet,
-  useNavigate,
-} from "react-router-dom";
 
-import {
-  Bell,
-  ExternalLink,
-} from "lucide-react";
+import React from "react";
+import { Outlet, useNavigate } from "react-router-dom";
+
+import { Bell, ExternalLink } from "lucide-react";
 
 import AdminSidebar from "./AdminSidebar";
 
 export default function AdminLayout() {
-
   const navigate = useNavigate();
 
-  const isAdmin =
-    localStorage.getItem("shreekrishna_admin") === "true";
-
-  if (!isAdmin) {
-    return (
-      <Navigate
-        to="/admin/login"
-        replace
-      />
-    );
-  }
+  // Authentication and ADMIN role verification
+  // are handled by ProtectedRoute in App.jsx.
 
   return (
     <div className="min-h-screen bg-[#F7F5EF] flex">
@@ -58,6 +42,7 @@ export default function AdminLayout() {
             <button
               type="button"
               className="w-10 h-10 rounded-full bg-[#F7F5EF] flex items-center justify-center text-[#075e4d]"
+              aria-label="Notifications"
             >
               <Bell size={18} />
             </button>
@@ -69,21 +54,18 @@ export default function AdminLayout() {
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-[#075e4d] text-[#075e4d] text-xs font-semibold hover:bg-[#075e4d] hover:text-white transition"
             >
               View Website
-
               <ExternalLink size={14} />
             </button>
 
           </div>
-
         </header>
 
-        {/* PAGE */}
+        {/* PAGE CONTENT */}
         <main className="p-5 md:p-8">
           <Outlet />
         </main>
 
       </div>
-
     </div>
   );
 }
