@@ -15,9 +15,14 @@ import {
 import { useCart } from '../context/CartContext';
 import Button from '../components/Button';
 
+
 export default function Cart() {
   const {
     cartItems,
+    cartLoading,
+    cartError,
+    cartBusy,
+    refreshCart,
     removeFromCart,
     updateQuantity,
     clearCart,
@@ -34,6 +39,7 @@ export default function Cart() {
     totalItems
   } = useCart();
 
+
   const [couponInput, setCouponInput] = useState('');
 
   const handleApplyCoupon = (e) => {
@@ -43,6 +49,31 @@ export default function Cart() {
       setCouponInput('');
     }
   };
+  
+if (cartLoading) {
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center">
+      <p className="text-stone-600">
+        Loading your shopping cart...
+      </p>
+    </div>
+  );
+}
+
+if (cartError && cartItems.length === 0) {
+  return (
+    <div className="min-h-[70vh] flex flex-col gap-4 items-center justify-center">
+      <p className="text-red-600">{cartError}</p>
+      <button
+        type="button"
+        onClick={refreshCart}
+        className="bg-[#2B241D] text-white px-5 py-2 rounded-xl"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
 
   if (cartItems.length === 0) {
     return (
@@ -118,39 +149,86 @@ export default function Cart() {
               {cartItems.map((item) => (
                 <div key={item.cartItemId} className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                   
-                  {/* Product Thumbnail */}
-                  <Link to={`/product/${item.slug}`} className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-[#FAF6EF] border border-[#E8DFD3] shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover object-center"
-                    />
-                  </Link>
+                  
 
-                  {/* Product Details */}
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B5563C] block">
-                      {item.categoryName}
-                    </span>
-                    <Link to={`/product/${item.slug}`} className="hover:text-[#B5563C] transition-colors">
-                      <h3 className="font-serif font-bold text-base sm:text-lg text-stone-900 truncate">
-                        {item.name}
-                      </h3>
-                    </Link>
-                    <p className="text-xs text-stone-500 font-medium mt-0.5">
-                      Selected Size: <strong className="text-stone-800">{item.size}</strong>
-                    </p>
-                    <div className="flex items-baseline gap-2 mt-1">
-                      <span className="text-sm sm:text-base font-bold text-[#2B241D]">
-                        ₹{item.price}
-                      </span>
-                      {item.originalPrice > item.price && (
-                        <span className="text-xs text-stone-400 line-through">
-                          ₹{Math.round(item.originalPrice)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+{/* Product Thumbnail */}
+{item.slug ? (
+  <Link
+    to={`/product/${item.slug}`}
+    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-[#FAF6EF] border border-[#E8DFD3] shrink-0"
+  >
+    {item.image ? (
+      <img
+        src={item.image}
+        alt={item.name}
+        className="w-full h-full object-cover object-center"
+      />
+    ) : (
+      <div className="w-full h-full flex items-center justify-center text-xs text-stone-400">
+        No Image
+      </div>
+    )}
+  </Link>
+) : (
+  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-[#FAF6EF] border border-[#E8DFD3] shrink-0">
+    {item.image ? (
+      <img
+        src={item.image}
+        alt={item.name}
+        className="w-full h-full object-cover object-center"
+      />
+    ) : (
+      <div className="w-full h-full flex items-center justify-center text-xs text-stone-400">
+        No Image
+      </div>
+    )}
+  </div>
+)}
+
+{/* Product Details */}
+<div className="flex-1 min-w-0">
+  {item.categoryName && (
+    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B5563C] block">
+      {item.categoryName}
+    </span>
+  )}
+
+  {item.slug ? (
+    <Link
+      to={`/product/${item.slug}`}
+      className="hover:text-[#B5563C] transition-colors"
+    >
+      <h3 className="font-serif font-bold text-base sm:text-lg text-stone-900 truncate">
+        {item.name}
+      </h3>
+    </Link>
+  ) : (
+    <h3 className="font-serif font-bold text-base sm:text-lg text-stone-900 truncate">
+      {item.name}
+    </h3>
+  )}
+
+  <p className="text-xs text-stone-500 font-medium mt-0.5">
+    Selected Size:{' '}
+    <strong className="text-stone-800">
+      {item.size}
+    </strong>
+  </p>
+
+  <div className="flex items-baseline gap-2 mt-1">
+    <span className="text-sm sm:text-base font-bold text-[#2B241D]">
+      ₹{item.price}
+    </span>
+
+    {item.originalPrice > item.price && (
+      <span className="text-xs text-stone-400 line-through">
+        ₹{Math.round(item.originalPrice)}
+      </span>
+    )}
+  </div>
+</div>
+
+
 
                   {/* Quantity Adjuster & Item Subtotal */}
                   <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E8DFD3]">
@@ -158,6 +236,8 @@ export default function Cart() {
                     <div className="flex items-center bg-[#FAF6EF] border border-[#E8DFD3] rounded-xl p-0.5">
                       <button
                         type="button"
+                        disabled={cartBusy}
+
                         onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                         className="w-7 h-7 rounded-lg bg-white border border-stone-200 flex items-center justify-center text-xs font-bold text-stone-700 hover:bg-stone-100 cursor-pointer"
                         aria-label="Decrease quantity"
