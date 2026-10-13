@@ -1,142 +1,410 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useToast } from './ToastContext';
 
-const CartContext = createContext();
-const CART_STORAGE_KEY = 'prakriti_cart_items';
-const COUPON_STORAGE_KEY = 'prakriti_applied_coupon';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+
+import { useToast } from './ToastContext';
+import { useAuth } from './AuthContext';
+import { cartApi } from '../services/cartApi';
+import { normalizeRole } from '../services/authService';
+import { productService } from '../services/productService';
+const CartContext = createContext(null);
+
+// Convert backend cart item into the format used by Cart.jsx.
+function mapCartItem(item) {
+  const size = [item.sizeValue, item.sizeUnit]
+    .filter(
+      (value) =>
+        value !== null &&
+        value !== undefined &&
+        value !== ''
+    )
+    .join(' ');
+
+  return {
+    cartItemId: item.cartItemId,
+    productId: item.productId,
+    variantId: item.variantId,
+
+    // These fields will be available when the backend
+    // CartItemResponse includes them.
+    slug: item.productSlug ?? null,
+    image: item.productImageUrl ?? null,
+    categoryName: item.categoryName ?? '',
+
+    name: item.productName ?? 'Product',
+    size,
+    price: Number(item.price ?? 0),
+    originalPrice: Number(item.mrp ?? item.price ?? 0),
+    quantity: Number(item.quantity ?? 0),
+    lineTotal: Number(item.lineTotal ?? 0),
+    availableStock: item.availableStock,
+    available: item.available,
+  };
+}
+
+async function enrichCartItems(items) {
+  if (!items.length) return items;
+
+  const productIds = [
+    ...new Set(
+      items
+        .map(item => item.productId)
+        .filter(id => id != null)
+    ),
+  ];
+
+  const results = await Promise.allSettled(
+    productIds.map(id => productService.getProductById(id))
+  );
+
+  const productMap = new Map();
+
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      productMap.set(
+        String(productIds[index]),
+        result.value
+      );
+    } else {
+      console.error(
+        `Failed to load product ${productIds[index]}:`,
+        result.reason
+      );
+    }
+  });
+
+  return items.map(item => {
+    const product = productMap.get(String(item.productId));
+
+    if (!product) return item;
+
+    return {
+      ...item,
+      slug: item.slug || product.slug || null,
+      image: item.image || product.image || null,
+      categoryName:
+        item.categoryName || product.categoryName || '',
+    };
+  });
+}
+
 
 export function CartProvider({ children }) {
   const { addToast } = useToast();
+  const { user } = useAuth();
 
-  const [cartItems, setCartItems] = useState(() => {
-    try {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const isCustomer =
+    !!user && normalizeRole(user.role) === 'CUSTOMER';
 
-  const [appliedCoupon, setAppliedCoupon] = useState(() => {
-    try {
-      const stored = localStorage.getItem(COUPON_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const customerKey = isCustomer
+    ? String(user.id ?? user.email ?? '')
+    : '';
 
-  // Sync to localStorage
+  const [cartItems, setCartItems] = useState([]);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [cartError, setCartError] = useState(null);
+  const [cartBusy, setCartBusy] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
+  // Prevent old requests from updating a new user's cart.
+  const generationRef = useRef(0);
+
+  // Prevent overlapping cart modifications.
+  const busyRef = useRef(false);
+
+  // Apply the cart returned by the backend.
+ 
+const applyCartResponse = async (response, generation) => {
+  if (generation !== generationRef.current) return;
+
+  const items = Array.isArray(response?.items)
+    ? response.items
+    : [];
+
+  const mappedItems = items.map(mapCartItem);
+
+  // Display cart data immediately.
+  setCartItems(mappedItems);
+
+  // Fetch missing image, slug and category information.
+  const enrichedItems = await enrichCartItems(mappedItems);
+
+  // Prevent stale requests from updating another user's cart.
+  if (generation === generationRef.current) {
+    setCartItems(enrichedItems);
+  }
+};
+
+
+  // Load cart when the authenticated customer changes.
   useEffect(() => {
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-    } catch (e) {
-      console.error("Failed to save cart to localStorage", e);
-    }
-  }, [cartItems]);
+    const generation = ++generationRef.current;
 
-  useEffect(() => {
-    try {
-      if (appliedCoupon) {
-        localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(appliedCoupon));
-      } else {
-        localStorage.removeItem(COUPON_STORAGE_KEY);
-      }
-    } catch (e) {
-      console.error("Failed to save coupon to localStorage", e);
-    }
-  }, [appliedCoupon]);
+    setCartItems([]);
+    setAppliedCoupon(null);
+    setCartError(null);
+    setCartBusy(false);
+    busyRef.current = false;
 
-  /**
-   * Add item to cart
-   */
-  const addToCart = (product, selectedSize = null, quantity = 1) => {
-    const size = selectedSize || (product.sizes && product.sizes.find(s => s.isDefault)) || product.sizes[0] || { size: '1 Litre', price: product.price, mrp: product.originalPrice };
-    const cartItemId = `${product.id}-${size.size}`;
-
-    setCartItems(prevItems => {
-      const existingIndex = prevItems.findIndex(item => item.cartItemId === cartItemId);
-      if (existingIndex > -1) {
-        const updated = [...prevItems];
-        updated[existingIndex].quantity += quantity;
-        return updated;
-      } else {
-        return [
-          ...prevItems,
-          {
-            cartItemId,
-            productId: product.id,
-            slug: product.slug,
-            name: product.name,
-            size: size.size,
-            price: size.price,
-            originalPrice: size.mrp || size.price * 1.15,
-            image: product.image,
-            categoryName: product.categoryName,
-            quantity: quantity
-          }
-        ];
-      }
-    });
-
-    addToast(`Added ${product.name} (${size.size}) to cart`);
-  };
-
-  /**
-   * Update quantity of a cart item
-   */
-  const updateQuantity = (cartItemId, newQty) => {
-    if (newQty <= 0) {
-      removeFromCart(cartItemId);
+    if (!isCustomer) {
+      setCartLoading(false);
       return;
     }
 
-    setCartItems(prev =>
-      prev.map(item => item.cartItemId === cartItemId ? { ...item, quantity: newQty } : item)
+    setCartLoading(true);
+
+    cartApi.getCart()
+      .then((response) => applyCartResponse(response, generation))
+      .catch((error) => {
+        if (generation !== generationRef.current) {
+          return;
+        }
+
+        setCartError(
+          error.message || 'Unable to load your cart.'
+        );
+      })
+      .finally(() => {
+        if (generation === generationRef.current) {
+          setCartLoading(false);
+        }
+      });
+
+    return () => {
+      generationRef.current++;
+    };
+  }, [isCustomer, customerKey]);
+
+  // Manually refresh cart from backend.
+  const refreshCart = async () => {
+    if (!isCustomer) {
+      return null;
+    }
+
+    const generation = generationRef.current;
+
+    setCartLoading(true);
+    setCartError(null);
+
+    try {
+      const response = await cartApi.getCart();
+
+      await applyCartResponse(response, generation);
+
+      return response;
+    } catch (error) {
+      if (generation === generationRef.current) {
+        setCartError(error.message);
+        addToast(
+          error.message || 'Unable to refresh cart.',
+          'error'
+        );
+      }
+
+      throw error;
+    } finally {
+      if (generation === generationRef.current) {
+        setCartLoading(false);
+      }
+    }
+  };
+
+  // Shared handler for cart modification requests.
+  const performMutation = async (
+    request,
+    successMessage = null
+  ) => {
+    if (!isCustomer) {
+      addToast(
+        'Please sign in as a customer to use your cart.',
+        'error'
+      );
+      return false;
+    }
+
+    if (busyRef.current || cartLoading) {
+      return false;
+    }
+
+    const generation = generationRef.current;
+
+    busyRef.current = true;
+    setCartBusy(true);
+    setCartError(null);
+
+    try {
+      const response = await request();
+
+      if (generation !== generationRef.current) {
+        return false;
+      }
+
+      await applyCartResponse(response, generation);
+      if (successMessage) {
+        addToast(successMessage);
+      }
+
+      return true;
+    } catch (error) {
+      if (generation === generationRef.current) {
+        setCartError(
+          error.message || 'Cart operation failed.'
+        );
+
+        addToast(
+          error.message || 'Cart operation failed.',
+          'error'
+        );
+      }
+
+      return false;
+    } finally {
+      if (generation === generationRef.current) {
+        busyRef.current = false;
+        setCartBusy(false);
+      }
+    }
+  };
+
+  // POST /api/v1/cart/items
+  const addToCart = async (
+    product,
+    selectedSize = null,
+    quantity = 1
+  ) => {
+    const size =
+      selectedSize ??
+      product.sizes?.find((s) => s.isDefault) ??
+      product.sizes?.[0];
+
+    const variantId = Number(size?.variantId);
+    const validQuantity = Number(quantity);
+
+    if (
+      !Number.isSafeInteger(variantId) ||
+      variantId <= 0
+    ) {
+      addToast(
+        'Please select a valid product size.',
+        'error'
+      );
+      return false;
+    }
+
+    if (
+      !Number.isSafeInteger(validQuantity) ||
+      validQuantity < 1
+    ) {
+      addToast('Invalid quantity.', 'error');
+      return false;
+    }
+
+    return performMutation(
+      () => cartApi.addItem(variantId, validQuantity),
+      `${product.name} added to cart`
     );
   };
 
-  /**
-   * Remove item from cart
-   */
-  const removeFromCart = (cartItemId) => {
-    setCartItems(prev => {
-      const itemToRemove = prev.find(item => item.cartItemId === cartItemId);
-      if (itemToRemove) {
-        addToast(`Removed ${itemToRemove.name} from cart`, 'info');
-      }
-      return prev.filter(item => item.cartItemId !== cartItemId);
-    });
-  };
-
-  /**
-   * Clear all items from cart
-   */
-  const clearCart = () => {
-    setCartItems([]);
-    setAppliedCoupon(null);
-  };
-
-  /**
-   * Apply discount promo code
-   */
-  const applyCoupon = (code) => {
-    const cleanCode = (code || '').trim().toUpperCase();
-
-    if (cleanCode === 'SHREEKRISHNA10' || cleanCode === 'SHRIKRISHNA10' || cleanCode === 'PRAKRITI10' || cleanCode === 'ORGANIC10') {
-      const coupon = { code: cleanCode, discountPercent: 10, description: '10% Welcome Discount' };
-      setAppliedCoupon(coupon);
-      addToast(`🎉 Coupon "${cleanCode}" applied! You saved 10%`);
-      return { success: true, message: 'Coupon applied successfully!' };
-    } else if (cleanCode === 'PUREOIL' || cleanCode === 'HERITAGE15') {
-      const coupon = { code: cleanCode, discountPercent: 15, description: '15% Seasonal Festive Offer' };
-      setAppliedCoupon(coupon);
-      addToast(`🎉 Coupon "${cleanCode}" applied! You saved 15%`);
-      return { success: true, message: 'Coupon applied successfully!' };
-    } else {
-      addToast('Invalid coupon code. Try SHREEKRISHNA10 or PUREOIL', 'error');
-      return { success: false, message: 'Invalid coupon code.' };
+  // PUT /api/v1/cart/items/{itemId}
+  const updateQuantity = async (
+    cartItemId,
+    newQty
+  ) => {
+    if (newQty <= 0) {
+      return removeFromCart(cartItemId);
     }
+
+    if (
+      !Number.isSafeInteger(newQty) ||
+      newQty < 1
+    ) {
+      return false;
+    }
+
+    return performMutation(
+      () => cartApi.updateItem(cartItemId, newQty)
+    );
+  };
+
+  // DELETE /api/v1/cart/items/{itemId}
+  const removeFromCart = async (cartItemId) => {
+    return performMutation(
+      () => cartApi.removeItem(cartItemId),
+      'Item removed from cart'
+    );
+  };
+
+  // DELETE /api/v1/cart
+  const clearCart = async () => {
+    const success = await performMutation(
+      () => cartApi.clearCart(),
+      'Cart cleared'
+    );
+
+    if (success) {
+      setAppliedCoupon(null);
+    }
+
+    return success;
+  };
+
+  // Frontend-only coupon support.
+  // Backend validation is required before checkout/payment.
+  const applyCoupon = (code) => {
+    const cleanCode = (code || '')
+      .trim()
+      .toUpperCase();
+
+    const tenPercent = [
+      'SHREEKRISHNA10',
+      'SHRIKRISHNA10',
+      'PRAKRITI10',
+      'ORGANIC10',
+    ];
+
+    const fifteenPercent = [
+      'PUREOIL',
+      'HERITAGE15',
+    ];
+
+    let coupon = null;
+
+    if (tenPercent.includes(cleanCode)) {
+      coupon = {
+        code: cleanCode,
+        discountPercent: 10,
+        description: '10% Welcome Discount',
+      };
+    } else if (fifteenPercent.includes(cleanCode)) {
+      coupon = {
+        code: cleanCode,
+        discountPercent: 15,
+        description: '15% Seasonal Festive Offer',
+      };
+    }
+
+    if (!coupon) {
+      addToast('Invalid coupon code', 'error');
+
+      return {
+        success: false,
+        message: 'Invalid coupon code.',
+      };
+    }
+
+    setAppliedCoupon(coupon);
+
+    addToast(`Coupon "${cleanCode}" applied!`);
+
+    return {
+      success: true,
+      message: 'Coupon applied successfully!',
+    };
   };
 
   const removeCoupon = () => {
@@ -144,25 +412,64 @@ export function CartProvider({ children }) {
     addToast('Coupon removed', 'info');
   };
 
-  // Calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const totalOriginalPrice = cartItems.reduce((sum, item) => sum + (item.originalPrice * item.quantity), 0);
-  const productSavings = Math.max(0, totalOriginalPrice - subtotal);
-  
-  const couponDiscount = appliedCoupon ? Math.round((subtotal * appliedCoupon.discountPercent) / 100) : 0;
+  // Cart totals
+  const subtotal = cartItems.reduce(
+    (sum, item) =>
+      sum + item.price * item.quantity,
+    0
+  );
+
+  const totalOriginalPrice = cartItems.reduce(
+    (sum, item) =>
+      sum + item.originalPrice * item.quantity,
+    0
+  );
+
+  const productSavings = Math.max(
+    0,
+    totalOriginalPrice - subtotal
+  );
+
+  const couponDiscount = appliedCoupon
+    ? Math.round(
+        (subtotal * appliedCoupon.discountPercent) / 100
+      )
+    : 0;
+
   const freeShippingThreshold = 999;
-  const deliveryFee = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : 49;
-  const amountNeededForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
-  const total = Math.max(0, subtotal - couponDiscount + deliveryFee);
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const deliveryFee =
+    subtotal === 0 ||
+    subtotal >= freeShippingThreshold
+      ? 0
+      : 49;
+
+  const amountNeededForFreeShipping = Math.max(
+    0,
+    freeShippingThreshold - subtotal
+  );
+
+  const total = Math.max(
+    0,
+    subtotal - couponDiscount + deliveryFee
+  );
+
+  const totalItems = cartItems.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
 
   return (
     <CartContext.Provider
       value={{
         cartItems,
+        cartLoading,
+        cartError,
+        cartBusy,
+        refreshCart,
         addToCart,
-        removeFromCart,
         updateQuantity,
+        removeFromCart,
         clearCart,
         appliedCoupon,
         applyCoupon,
@@ -175,7 +482,7 @@ export function CartProvider({ children }) {
         freeShippingThreshold,
         amountNeededForFreeShipping,
         total,
-        totalItems
+        totalItems,
       }}
     >
       {children}
@@ -185,8 +492,12 @@ export function CartProvider({ children }) {
 
 export function useCart() {
   const context = useContext(CartContext);
+
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error(
+      'useCart must be used within a CartProvider'
+    );
   }
+
   return context;
 }

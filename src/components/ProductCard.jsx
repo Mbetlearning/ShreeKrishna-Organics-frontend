@@ -63,6 +63,7 @@ export default function ProductCard({ product }) {
   const [selectedSize, setSelectedSize] = useState(null);
 
   const [isAdded, setIsAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const [comboVariantIds, setComboVariantIds] = useState(() => new Set());
 
@@ -118,39 +119,40 @@ export default function ProductCard({ product }) {
 
 
 
-  const handleAddToCart = (e) => {
-
+  const handleAddToCart = async (e) => {
     e.preventDefault();
-
     e.stopPropagation();
+    if (!canPurchase || adding) return;
 
-    if (!canPurchase) return;
-
-    addToCart(product, selectedSize, 1);
-
-    setIsAdded(true);
-
-    setTimeout(() => setIsAdded(false), 1500);
-
+    setAdding(true);
+    try {
+      const success = await addToCart(product, selectedSize, 1);
+      if (success) {
+        setIsAdded(true);
+        setTimeout(() => setIsAdded(false), 1500);
+      }
+    } catch (error) {
+      console.error('Unable to add product to cart:', error);
+    } finally {
+      setAdding(false);
+    }
   };
 
-
-
-  const handleBuyNow = (e) => {
-
+  const handleBuyNow = async (e) => {
     e.preventDefault();
-
     e.stopPropagation();
+    if (!canPurchase || adding) return;
 
-    if (!canPurchase) return;
-
-    addToCart(product, selectedSize, 1);
-
-    navigate('/checkout');
-
+    setAdding(true);
+    try {
+      const success = await addToCart(product, selectedSize, 1);
+      if (success) navigate('/checkout');
+    } catch (error) {
+      console.error('Unable to proceed to checkout:', error);
+    } finally {
+      setAdding(false);
+    }
   };
-
-
 
   return (
 
@@ -316,17 +318,17 @@ export default function ProductCard({ product }) {
 
             <div className="flex w-full flex-wrap items-center gap-2">
 
-              <button type="button" disabled={!canPurchase} onClick={handleAddToCart}
+              <button type="button" disabled={!canPurchase || adding} onClick={handleAddToCart}
 
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${!canPurchase ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : isAdded ? 'bg-[#2B241D] text-white' : 'bg-[#08765B] text-white hover:bg-[#08765B]'}`}>
+                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${(!canPurchase || adding) ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : isAdded ? 'bg-[#2B241D] text-white' : 'bg-[#B5563C] text-white hover:bg-[#9E442B]'}`}>
 
-                {isAdded ? <><Check className="w-3.5 h-3.5" />Added</> : <><ShoppingCart size={17} strokeWidth={2.5} className="shrink-0" />Add to Cart</>}
+                {isAdded ? <><Check className="w-3.5 h-3.5" />Added</> : <><ShoppingCart size={17} strokeWidth={2.5} className="shrink-0" />{adding ? 'Adding...' : 'Add to Cart'}</>}
 
               </button>
 
-              <button type="button" disabled={!canPurchase} onClick={handleBuyNow}
+              <button type="button" disabled={!canPurchase || adding} onClick={handleBuyNow}
 
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${!canPurchase ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : 'bg-[#B5563C] text-white hover:bg-[#B5563C]'}`}>
+                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${(!canPurchase || adding) ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : 'bg-[#08765B] text-white hover:bg-[#065C47]'}`}>
 
                 <Zap className="w-3.5 h-3.5" />Buy Now
 
