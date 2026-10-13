@@ -305,7 +305,10 @@ export default function Home() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await productService.getFeaturedProducts();
+        const data = await productService.getAllProducts({
+  category: "all",
+  sortBy: "featured",
+});
         setFeaturedProducts(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error loading products:", error);
@@ -712,18 +715,18 @@ export default function Home() {
           ) : (
             <>
               <div
-                ref={productScrollRef}
-                className="flex gap-4 overflow-x-auto scroll-smooth px-5 lg:px-12 pb-5"
-              >
-                {featuredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="min-w-[270px] sm:min-w-[285px] lg:min-w-[300px]"
-                  >
-                    <ProductCard product={product} />
-                  </div>
-                ))}
-              </div>
+  ref={productScrollRef}
+  className="flex gap-5 overflow-x-auto scroll-smooth px-4 sm:px-6 lg:px-12 pb-6"
+>
+  {featuredProducts.map((product) => (
+    <div
+      key={product.id}
+      className="flex-none w-[240px] sm:w-[260px] lg:w-[280px]"
+    >
+      <ProductCard product={product} />
+    </div>
+  ))}
+</div>
               {/* PRODUCT LEFT */}
               <button
                 type="button"

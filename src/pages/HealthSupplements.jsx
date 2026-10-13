@@ -54,47 +54,12 @@ export default function HealthSupplements() {
 
         const data = await productService.getAllProducts({
 
-          category: "supplements",
+          category: "health-supplements",
 
           sortBy: "featured",
 
         });
-
-        /*
-
-          A2 Ghee has also been stored under "supplements"
-
-          in the current demo catalog.
-
-          Because A2 Ghee already has its own page,
-
-          we exclude ghee products here.
-
-        */
-
-        const supplementProducts = (data || []).filter((product) => {
-
-          const searchableText = `
-
-            ${product.name || ""}
-
-            ${product.slug || ""}
-
-            ${product.tagline || ""}
-
-            ${product.shortDescription || ""}
-
-          `.toLowerCase();
-
-          return !(
-
-            searchableText.includes("ghee") ||
-
-            searchableText.includes("bilona")
-
-          );
-
-        });
+        const supplementProducts = data || [];
 
         if (active) {
 
@@ -633,6 +598,7 @@ export default function HealthSupplements() {
                 <img
 
                   src="/images/health-supplements-hero2.png"
+
                   alt="ShreeKrishna Health Supplements"
 
                   className="
