@@ -18,15 +18,29 @@ export default function ProductCard({ product }) {
     ? Math.round(((currentMrp - currentPrice) / currentMrp) * 100) : 0;
   const canPurchase = Boolean(selectedSize?.variantId && currentPrice != null);
 
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!canPurchase) return;
-    // Existing CartContext is local/demo until Cart API integration.
-    addToCart(product, selectedSize, 1);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 1500);
-  };
+  
+const [adding, setAdding] = useState(false);
+
+const handleAddToCart = async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (!canPurchase || adding) return;
+
+  setAdding(true);
+
+  try {
+    const success = await addToCart(product, selectedSize, 1);
+
+    if (success) {
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 1500);
+    }
+  } finally {
+    setAdding(false);
+  }
+};
+
 
   return (
     <div className="group relative flex flex-col bg-white rounded-2xl overflow-hidden border border-[#E8DFD3] shadow-subtle hover:shadow-card transition-all duration-300 hover:-translate-y-1">
