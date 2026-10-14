@@ -320,7 +320,7 @@ export default function ProductCard({ product }) {
 
               <button type="button" disabled={!canPurchase || adding} onClick={handleAddToCart}
 
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${(!canPurchase || adding) ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : isAdded ? 'bg-[#2B241D] text-white' : 'bg-[#B5563C] text-white hover:bg-[#9E442B]'}`}>
+                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${(!canPurchase || adding) ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : isAdded ? 'bg-[#2B241D] text-white' : 'bg-[#08765B] text-white hover:bg-[#250ca6]'}`}>
 
                 {isAdded ? <><Check className="w-3.5 h-3.5" />Added</> : <><ShoppingCart size={17} strokeWidth={2.5} className="shrink-0" />{adding ? 'Adding...' : 'Add to Cart'}</>}
 
@@ -328,7 +328,7 @@ export default function ProductCard({ product }) {
 
               <button type="button" disabled={!canPurchase || adding} onClick={handleBuyNow}
 
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${(!canPurchase || adding) ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : 'bg-[#08765B] text-white hover:bg-[#065C47]'}`}>
+                className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-semibold transition-colors ${(!canPurchase || adding) ? 'bg-stone-200 text-stone-500 cursor-not-allowed' : 'bg-[#B5563C] text-white hover:bg-[#130797]'}`}>
 
                 <Zap className="w-3.5 h-3.5" />Buy Now
 

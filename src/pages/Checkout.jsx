@@ -31,23 +31,39 @@ import { useToast } from '../context/ToastContext';
 import { addressApi } from '../services/addressApi';
 
 import { customerOrderApi } from '../services/customerOrderApi';
+
 import { paymentApi } from '../services/paymentApi';
 
 const loadRazorpay = () => new Promise((resolve, reject) => {
+
   if (window.Razorpay) return resolve();
+
   const existing = document.querySelector('script[data-razorpay-checkout]');
+
   if (existing) {
+
     existing.addEventListener('load', () => resolve(), { once: true });
+
     existing.addEventListener('error', () => reject(new Error('Razorpay failed to load.')), { once: true });
+
     return;
+
   }
+
   const script = document.createElement('script');
+
   script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+
   script.async = true;
+
   script.dataset.razorpayCheckout = 'true';
+
   script.onload = () => resolve();
+
   script.onerror = () => reject(new Error('Unable to load Razorpay checkout.'));
+
   document.body.appendChild(script);
+
 });
 
 const INDIAN_STATES = [
@@ -179,31 +195,53 @@ export default function Checkout() {
   const [savingAddress, setSavingAddress] = useState(false);
 
   const [error, setError] = useState('');
+
   const [paymentMethod, setPaymentMethod] = useState('RAZORPAY');
+
   const [pendingOrder, setPendingOrder] = useState(null);
+
+  const [cancellingOrder, setCancellingOrder] = useState(false);
+
   const paymentInProgress = useRef(false);
+
   const pendingKey = user?.id != null ? `sko_pending_payment_${user.id}` :
+
     user?.email ? `sko_pending_payment_${user.email}` : null;
 
   useEffect(() => {
+
     if (!pendingKey) return;
+
     const stored = sessionStorage.getItem(pendingKey);
+
     if (!stored) return;
+
     try {
+
       const parsed = JSON.parse(stored);
+
       if (parsed?.id) setPendingOrder(parsed);
+
     } catch { sessionStorage.removeItem(pendingKey); }
+
   }, [pendingKey]);
 
   const savePendingOrder = (order) => {
-    const next = { id: order.id, orderNumber: order.orderNumber };
+
+    const next = { id: order.id, orderNumber: order.orderNumber, verificationUncertain: Boolean(order.verificationUncertain) };
+
     setPendingOrder(next);
+
     if (pendingKey) sessionStorage.setItem(pendingKey, JSON.stringify(next));
+
   };
 
   const clearPendingOrder = () => {
+
     setPendingOrder(null);
+
     if (pendingKey) sessionStorage.removeItem(pendingKey);
+
   };
 
   const loadCheckout = async () => {
@@ -434,99 +472,360 @@ export default function Checkout() {
 
   };
 
-  const startRazorpayPayment = async (order) => {
-    if (paymentInProgress.current) return;
-    paymentInProgress.current = true;
-    setSubmitting(true);
-    try {
-      const key = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!key) throw new Error('Razorpay public Key ID is not configured.');
-      await loadRazorpay();
-      const payment = await paymentApi.createRazorpayPayment(order.id);
-      const amountPaise = Math.round(Number(payment.amount) * 100);
-      if (!Number.isSafeInteger(amountPaise) || amountPaise <= 0) {
-        throw new Error('Invalid payment amount returned by server.');
-      }
-      if (!payment.razorpayOrderId) throw new Error('Missing Razorpay order ID.');
-      const razorpay = new window.Razorpay({
-        key,
-        amount: amountPaise,
-        currency: payment.currency || 'INR',
-        name: 'ShreeKrishna Organics',
-        description: `Payment for order ${order.orderNumber || order.id}`,
-        order_id: payment.razorpayOrderId,
-        prefill: { email: user?.email || '' },
-        theme: { color: '#B5563C' },
-        handler: async (result) => {
-          setSubmitting(true);
-          try {
-            const verified = await paymentApi.verifyRazorpayPayment(order.id, result);
-            if (verified.status !== 'PAID') {
-              throw new Error('Payment has not been confirmed.');
-            }
-            clearPendingOrder();
-            addToast('Payment verified successfully!', 'success');
-            try { await refreshCart(); } catch (e) { console.warn(e); }
-            navigate('/orders', { replace: true, state: { placedOrderId: order.id } });
-          } catch (err) {
-            addToast(`${err.message || 'Verification pending.'} Do not pay again until payment status is checked.`, 'error');
-          } finally {
-            paymentInProgress.current = false;
-            setSubmitting(false);
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            paymentInProgress.current = false;
-            setSubmitting(false);
-            addToast('Payment window closed. Your pending order is saved for retry.', 'error');
-          },
-        },
-      });
-      razorpay.on('payment.failed', () => {
-        addToast('Payment failed. Please check your order before retrying.', 'error');
-      });
-      razorpay.open();
-    } catch (err) {
-      paymentInProgress.current = false;
-      setSubmitting(false);
-      addToast(err.message || 'Could not start Razorpay payment.', 'error');
+  // Read the authoritative order status before allowing another payment attempt.
+
+  const checkPendingOrder = async (orderId) => {
+
+    const current = await customerOrderApi.getOrderById(orderId);
+
+    if (!current || String(current.id) !== String(orderId)) {
+
+      throw new Error('Unable to confirm the current order status.');
+
     }
+
+    if (current.paymentStatus === 'PAID') {
+
+      clearPendingOrder();
+
+      addToast('Your payment is already confirmed.', 'success');
+
+      navigate('/orders', { replace: true, state: { placedOrderId: current.id } });
+
+      return null;
+
+    }
+
+    if (current.status === 'CANCELLED') {
+
+      clearPendingOrder();
+
+      addToast('This order has been cancelled.', 'error');
+
+      navigate('/orders', { replace: true });
+
+      return null;
+
+    }
+
+    if (current.paymentMethod !== 'RAZORPAY' ||
+
+        current.status !== 'PENDING_PAYMENT' ||
+
+        current.paymentStatus !== 'PENDING' ||
+
+        current.stockState !== 'RESERVED') {
+
+      throw new Error('Order is not eligible for online payment. Check My Orders.');
+
+    }
+
+    return current;
+
   };
 
-  const handlePlaceOrder = async () => {
-    if (submitting || savingAddress || loading || paymentInProgress.current) return;
-    if (pendingOrder) {
-      addToast('Please resolve your pending online order first.', 'error');
-      return;
-    }
-    if (!selectedAddressId) return addToast('Please select a delivery address.', 'error');
-    if (!summary?.items?.length) return addToast('Your cart is empty.', 'error');
-    if (summary.items.some((item) => !item.available)) {
-      return addToast('Some products are unavailable. Update your cart.', 'error');
-    }
+
+
+  const startRazorpayPayment = async (order, isRetry = false) => {
+
+    if (paymentInProgress.current) return;
+
+    paymentInProgress.current = true;
+
     setSubmitting(true);
-    let createdOrder = null;
+
+    let popupOpened = false;
+
     try {
-      createdOrder = await customerOrderApi.placeOrder(selectedAddressId, paymentMethod);
-      if (!createdOrder?.id) throw new Error('Order created without an ID. Check My Orders.');
-      try { await refreshCart(); } catch (e) { console.warn(e); }
-      if (paymentMethod === 'RAZORPAY') {
-        savePendingOrder(createdOrder);
-        setSubmitting(false);
-        await startRazorpayPayment(createdOrder);
-        return;
+
+      const key = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+      if (!key) throw new Error('Razorpay public Key ID is not configured.');
+
+
+
+      // For retries, do not assume that a previous attempt failed.
+
+      if (isRetry) {
+
+        if (order.verificationUncertain) {
+
+          throw new Error('Payment verification is unresolved. Please contact support before attempting another payment.');
+
+        }
+
+        const current = await checkPendingOrder(order.id);
+
+        if (!current) return;
+
       }
-      addToast(`Order ${createdOrder.orderNumber || createdOrder.id} placed successfully!`, 'success');
-      navigate('/orders', { replace: true, state: { placedOrderId: createdOrder.id } });
+
+
+
+      await loadRazorpay();
+
+      const payment = await paymentApi.createRazorpayPayment(order.id);
+
+      const amountPaise = Math.round(Number(payment.amount) * 100);
+
+      if (!Number.isSafeInteger(amountPaise) || amountPaise <= 0) {
+
+        throw new Error('Invalid payment amount returned by server.');
+
+      }
+
+      if (!payment.razorpayOrderId) throw new Error('Missing Razorpay order ID.');
+
+
+
+      const razorpay = new window.Razorpay({
+
+        key,
+
+        amount: amountPaise,
+
+        currency: payment.currency || 'INR',
+
+        name: 'ShreeKrishna Organics',
+
+        description: `Payment for order ${order.orderNumber || order.id}`,
+
+        order_id: payment.razorpayOrderId,
+
+        prefill: { email: user?.email || '' },
+
+        theme: { color: '#B5563C' },
+
+        handler: async (result) => {
+
+          setSubmitting(true);
+
+          try {
+
+            const verified = await paymentApi.verifyRazorpayPayment(order.id, result);
+
+            if (verified.status !== 'PAID') {
+
+              throw new Error('Payment confirmation is pending.');
+
+            }
+
+            clearPendingOrder();
+
+            addToast('Payment verified successfully!', 'success');
+
+            try { await refreshCart(); } catch (e) { console.warn(e); }
+
+            navigate('/orders', { replace: true, state: { placedOrderId: order.id } });
+
+          } catch (err) {
+
+            // The webhook may have completed payment despite a failed browser request.
+
+            try {
+
+              const current = await customerOrderApi.getOrderById(order.id);
+
+              if (current?.paymentStatus === 'PAID') {
+
+                clearPendingOrder();
+
+                addToast('Payment confirmed successfully!', 'success');
+
+                try { await refreshCart(); } catch (e) { console.warn(e); }
+
+                navigate('/orders', { replace: true, state: { placedOrderId: order.id } });
+
+                return;
+
+              }
+
+            } catch (statusError) {
+
+              console.warn('Could not confirm payment status:', statusError);
+
+            }
+
+            savePendingOrder({ ...order, verificationUncertain: true });
+
+            addToast('Payment confirmation is uncertain. Check My Orders and contact support if money was deducted. Do not pay again yet.', 'error');
+
+          } finally {
+
+            paymentInProgress.current = false;
+
+            setSubmitting(false);
+
+          }
+
+        },
+
+        modal: {
+
+          ondismiss: () => {
+
+            paymentInProgress.current = false;
+
+            setSubmitting(false);
+
+            addToast('Payment window closed. Check My Orders before retrying.', 'error');
+
+          },
+
+        },
+
+      });
+
+      razorpay.on('payment.failed', () => {
+
+        addToast('Payment failed. Please check your order before retrying.', 'error');
+
+      });
+
+      razorpay.open();
+
+      popupOpened = true;
+
     } catch (err) {
-      addToast(err.message || 'Order could not be placed. Check My Orders before retrying.', 'error');
-      if (!createdOrder) {
-        try { setSummary(await customerOrderApi.getCheckoutSummary()); } catch { /* keep original error */ }
-      }
+
+      addToast(err.message || 'Could not start Razorpay payment.', 'error');
+
     } finally {
-      setSubmitting(false);
+
+      // This block finishes before the Razorpay popup callbacks run.
+
+      // Keep the lock until the popup closes or its handler finishes.
+
+      if (!popupOpened) {
+
+        paymentInProgress.current = false;
+
+        setSubmitting(false);
+
+      }
+
     }
+
+  };
+
+
+
+  const handleCancelOrder = async () => {
+
+    if (!pendingOrder?.id || submitting || cancellingOrder || paymentInProgress.current) return;
+
+    const confirmed = window.confirm(
+
+      `Are you sure you want to cancel order ${pendingOrder.orderNumber || pendingOrder.id}?`
+
+    );
+
+    if (!confirmed) return;
+
+    setCancellingOrder(true);
+
+    try {
+
+      const current = await checkPendingOrder(pendingOrder.id);
+
+      if (!current) return;
+
+      const cancelledOrder = await customerOrderApi.cancelOrder(pendingOrder.id);
+
+      if (cancelledOrder?.status !== 'CANCELLED') {
+
+        throw new Error('Order cancellation was not confirmed.');
+
+      }
+
+      clearPendingOrder();
+
+      try { await refreshCart(); } catch (e) { console.warn(e); }
+
+      addToast('Order cancelled successfully.', 'success');
+
+      navigate('/shop', { replace: true });
+
+    } catch (err) {
+
+      addToast(err.message || 'Could not cancel order. Check My Orders.', 'error');
+
+    } finally {
+
+      setCancellingOrder(false);
+
+    }
+
+  };
+
+
+
+  const handlePlaceOrder = async () => {
+
+    if (submitting || savingAddress || loading || paymentInProgress.current) return;
+
+    if (pendingOrder) {
+
+      addToast('Please resolve your pending online order first.', 'error');
+
+      return;
+
+    }
+
+    if (!selectedAddressId) return addToast('Please select a delivery address.', 'error');
+
+    if (!summary?.items?.length) return addToast('Your cart is empty.', 'error');
+
+    if (summary.items.some((item) => !item.available)) {
+
+      return addToast('Some products are unavailable. Update your cart.', 'error');
+
+    }
+
+    setSubmitting(true);
+
+    let createdOrder = null;
+
+    try {
+
+      createdOrder = await customerOrderApi.placeOrder(selectedAddressId, paymentMethod);
+
+      if (!createdOrder?.id) throw new Error('Order created without an ID. Check My Orders.');
+
+      try { await refreshCart(); } catch (e) { console.warn(e); }
+
+      if (paymentMethod === 'RAZORPAY') {
+
+        savePendingOrder(createdOrder);
+
+        setSubmitting(false);
+
+        await startRazorpayPayment(createdOrder);
+
+        return;
+
+      }
+
+      addToast(`Order ${createdOrder.orderNumber || createdOrder.id} placed successfully!`, 'success');
+
+      navigate('/orders', { replace: true, state: { placedOrderId: createdOrder.id } });
+
+    } catch (err) {
+
+      addToast(err.message || 'Order could not be placed. Check My Orders before retrying.', 'error');
+
+      if (!createdOrder) {
+
+        try { setSummary(await customerOrderApi.getCheckoutSummary()); } catch { /* keep original error */ }
+
+      }
+
+    } finally {
+
+      setSubmitting(false);
+
+    }
+
   };
 
   const items = summary?.items || [];
@@ -534,8 +833,11 @@ export default function Checkout() {
   const hasUnavailableItems = items.some((item) => !item.available);
 
   const noItems = !loading && items.length === 0;
+
   const subtotal = Number(summary?.subtotal || 0);
+
   const codCharge = paymentMethod === 'COD' ? Math.round(subtotal * 5) / 100 : 0;
+
   const payableTotal = Number(summary?.totalAmount || 0) + codCharge;
 
   const fieldClass =
@@ -655,14 +957,74 @@ export default function Checkout() {
         )}
 
                   {pendingOrder && (
+
             <section className="mb-6 bg-white border border-amber-300 rounded-2xl p-5 space-y-3">
-              <h2 className="font-bold text-stone-900">Online payment pending — Order {pendingOrder.orderNumber || pendingOrder.id}</h2>
-              <p className="text-sm text-stone-600">Your order is already created and the cart has been cleared. Check My Orders before retrying if a payment may have been deducted.</p>
+
+              <h2 className="font-bold text-stone-900">
+
+                Online payment pending — Order {pendingOrder.orderNumber || pendingOrder.id}
+
+              </h2>
+
+              <p className="text-sm text-stone-600">
+
+                Your order is already created and the cart has been cleared.
+
+                If payment may have been deducted, check My Orders before retrying or cancelling.
+
+              </p>
+
               <div className="flex flex-wrap gap-3">
-                <button type="button" disabled={submitting} onClick={() => startRazorpayPayment(pendingOrder)} className="px-5 py-3 bg-[#B5563C] text-white rounded-xl disabled:opacity-50">{submitting ? 'Processing...' : 'Retry Pending Payment'}</button>
-                <Link to="/orders" className="px-5 py-3 border rounded-xl">Check My Orders</Link>
+
+                <button
+
+                  type="button"
+
+                  disabled={submitting || cancellingOrder}
+
+                  onClick={() => startRazorpayPayment(pendingOrder, true)}
+
+                  className="px-5 py-3 bg-[#B5563C] text-white rounded-xl disabled:opacity-50"
+
+                >
+
+                  {submitting ? 'Processing...' : 'Retry Pending Payment'}
+
+                </button>
+
+                <button
+
+                  type="button"
+
+                  disabled={submitting || cancellingOrder || paymentInProgress.current}
+
+                  onClick={handleCancelOrder}
+
+                  className="px-5 py-3 border border-red-400 text-red-700 rounded-xl hover:bg-red-50 disabled:opacity-50"
+
+                >
+
+                  {cancellingOrder ? 'Cancelling...' : 'Cancel Order'}
+
+                </button>
+
+                <Link to="/orders" className="px-5 py-3 border rounded-xl">
+
+                  Check My Orders
+
+                </Link>
+
+                <Link
+                  to="/shop"
+                  className="inline-flex items-center justify-center px-5 py-3 border border-stone-300 text-stone-700 rounded-xl hover:bg-stone-50"
+                >
+                  Exit to Shop
+                </Link>
+
               </div>
+
             </section>
+
           )}
 
           {pendingOrder ? null : loading || cartLoading ? (
@@ -1060,21 +1422,37 @@ export default function Checkout() {
               </section>
 
               <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8DFD3]">
+
   <h2 className="font-serif font-bold text-lg text-[#2B241D] flex items-center gap-2 pb-4 border-b border-[#E8DFD3]">
+
     <CreditCard className="w-5 h-5 text-[#B5563C]" /> Payment Method
+
   </h2>
+
   <div className="mt-5 space-y-3">
+
     <label className={`flex gap-3 p-4 rounded-2xl border-2 cursor-pointer ${paymentMethod === 'RAZORPAY' ? 'border-[#B5563C] bg-[#B5563C]/5' : 'border-[#E8DFD3]'}`}>
+
       <input type="radio" name="paymentMethod" checked={paymentMethod === 'RAZORPAY'} onChange={() => setPaymentMethod('RAZORPAY')} />
+
       <CreditCard className="text-[#B5563C]" />
+
       <span><strong>Pay Online (Razorpay)</strong><span className="block text-xs text-stone-500">UPI, cards and supported methods</span></span>
+
     </label>
+
     <label className={`flex gap-3 p-4 rounded-2xl border-2 cursor-pointer ${paymentMethod === 'COD' ? 'border-[#B5563C] bg-[#B5563C]/5' : 'border-[#E8DFD3]'}`}>
+
       <input type="radio" name="paymentMethod" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} />
+
       <Banknote className="text-green-700" />
+
       <span><strong>Cash on Delivery (COD)</strong><span className="block text-xs text-stone-500">Additional 5% COD charge</span></span>
+
     </label>
+
   </div>
+
 </section>
 
               {user?.email && (
@@ -1238,8 +1616,11 @@ export default function Checkout() {
                   </div>
 
                   {paymentMethod === 'COD' && (
+
   <div className="flex justify-between"><span>COD charge (5%)</span><span>{money(codCharge)}</span></div>
+
 )}
+
 <div className="flex justify-between pt-4 border-t border-[#E8DFD3] font-bold text-[#2B241D] text-lg">
 
                     <span>Total Amount</span>
