@@ -2,11 +2,35 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { getReviewSummary } from '../services/reviewApi';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const [selectedSize, setSelectedSize] = useState(null);
   const [isAdded, setIsAdded] = useState(false);
+  
+const [reviewSummary, setReviewSummary] = useState(null);
+
+useEffect(() => {
+  let active = true;
+
+  setReviewSummary(null);
+
+  if (!product.id) return;
+
+  getReviewSummary(product.id)
+    .then((data) => {
+      if (active) setReviewSummary(data);
+    })
+    .catch((error) => {
+      console.error('Failed to load review summary:', error);
+    });
+
+  return () => {
+    active = false;
+  };
+}, [product.id]);
+
 
   useEffect(() => {
     setSelectedSize(product.sizes?.find(s => s.isDefault) ?? product.sizes?.[0] ?? null);
@@ -58,6 +82,27 @@ const handleAddToCart = async (e) => {
           <h3 className="font-serif font-bold text-base sm:text-lg text-stone-900 line-clamp-1">{product.name}</h3>
         </Link>
         {product.tagline && <p className="mt-1 text-xs text-stone-500 line-clamp-2 leading-relaxed">{product.tagline}</p>}
+        
+{reviewSummary && Number(reviewSummary.reviewCount) > 0 && (
+  <div className="mt-2 flex items-center gap-2">
+    <span className="text-amber-500 text-sm">
+      {Array.from({ length: 5 }, (_, i) =>
+        i < Math.round(Number(reviewSummary.averageRating))
+          ? '★'
+          : '☆'
+      ).join('')}
+    </span>
+
+    <span className="text-xs font-semibold text-stone-700">
+      {Number(reviewSummary.averageRating).toFixed(1)}
+    </span>
+
+    <span className="text-xs text-stone-500">
+      ({reviewSummary.reviewCount} reviews)
+    </span>
+  </div>
+)}
+
         {product.sizes?.length > 1 && (
           <div className="mt-3.5 pt-3 border-t border-[#E8DFD3]/80">
             <span className="text-[11px] font-semibold text-stone-500 block mb-1.5">Select Size:</span>
