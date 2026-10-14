@@ -175,7 +175,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
-
+const [checkingPayment, setCheckingPayment] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
 
   const [error, setError] = useState('');
@@ -205,7 +205,96 @@ export default function Checkout() {
     setPendingOrder(null);
     if (pendingKey) sessionStorage.removeItem(pendingKey);
   };
+const checkPendingOrder = async () => {
+  if (!pendingOrder?.id) return null;
 
+  try {
+    const order = await customerOrderApi.getOrderById(pendingOrder.id);
+
+    if (order.paymentStatus === 'PAID') {
+      clearPendingOrder();
+      await refreshCart();
+
+      navigate('/orders', {
+        replace: true,
+        state: { placedOrderId: order.id },
+      });
+
+      return order;
+    }
+
+    if (order.status === 'CANCELLED') {
+      clearPendingOrder();
+      await loadCheckout();
+      return order;
+    }
+
+    if (order.paymentStatus === 'PENDING') {
+      addToast(
+        'Payment is still pending. Please retry or check My Orders.',
+        'info'
+      );
+    }
+
+    return order;
+  } catch (err) {
+    addToast(
+      err.message || 'Unable to check payment status.',
+      'error'
+    );
+    return null;
+  }
+};
+const handleRetryPendingPayment = async () => {
+  if (
+    !pendingOrder?.id ||
+    submitting ||
+    checkingPayment ||
+    paymentInProgress.current
+  ) {
+    return;
+  }
+
+  setCheckingPayment(true);
+
+  try {
+    const order = await customerOrderApi.getOrderById(
+      pendingOrder.id
+    );
+
+    if (order.paymentStatus === 'PAID') {
+      clearPendingOrder();
+
+      navigate('/orders', {
+        replace: true,
+        state: { placedOrderId: order.id },
+      });
+
+      return;
+    }
+
+    if (
+      order.status !== 'PLACED' ||
+      order.paymentStatus !== 'PENDING' ||
+      order.paymentMethod !== 'RAZORPAY'
+    ) {
+      addToast(
+        'This order is not eligible for payment retry. Check My Orders.',
+        'error'
+      );
+      return;
+    }
+
+    await startRazorpayPayment(order);
+  } catch (err) {
+    addToast(
+      err.message || 'Unable to check payment status. Please try again.',
+      'error'
+    );
+  } finally {
+    setCheckingPayment(false);
+  }
+};
   const loadCheckout = async () => {
 
     setLoading(true);
@@ -475,13 +564,17 @@ export default function Checkout() {
             setSubmitting(false);
           }
         },
-        modal: {
-          ondismiss: () => {
-            paymentInProgress.current = false;
-            setSubmitting(false);
-            addToast('Payment window closed. Your pending order is saved for retry.', 'error');
-          },
-        },
+       modal: {
+  ondismiss: () => {
+    paymentInProgress.current = false;
+    setSubmitting(false);
+
+    addToast(
+      'Payment window closed. Your order is saved. Check payment status before retrying.',
+      'info'
+    );
+  },
+},
       });
       razorpay.on('payment.failed', () => {
         addToast('Payment failed. Please check your order before retrying.', 'error');
@@ -654,16 +747,54 @@ export default function Checkout() {
 
         )}
 
-                  {pendingOrder && (
-            <section className="mb-6 bg-white border border-amber-300 rounded-2xl p-5 space-y-3">
-              <h2 className="font-bold text-stone-900">Online payment pending — Order {pendingOrder.orderNumber || pendingOrder.id}</h2>
-              <p className="text-sm text-stone-600">Your order is already created and the cart has been cleared. Check My Orders before retrying if a payment may have been deducted.</p>
-              <div className="flex flex-wrap gap-3">
-                <button type="button" disabled={submitting} onClick={() => startRazorpayPayment(pendingOrder)} className="px-5 py-3 bg-[#B5563C] text-white rounded-xl disabled:opacity-50">{submitting ? 'Processing...' : 'Retry Pending Payment'}</button>
-                <Link to="/orders" className="px-5 py-3 border rounded-xl">Check My Orders</Link>
-              </div>
-            </section>
-          )}
+            {pendingOrder && (
+  <section className="mb-6 bg-white border border-amber-300 rounded-2xl p-5 space-y-3">
+
+    <h2 className="font-bold text-stone-900">
+      Online payment pending — Order {pendingOrder.orderNumber || pendingOrder.id}
+    </h2>
+
+    <p className="text-sm text-stone-600">
+      Your order is already created and the cart has been cleared.
+      Check My Orders before retrying if a payment may have been deducted.
+    </p>
+
+    <div className="flex flex-wrap gap-3">
+
+      <button
+  type="button"
+  disabled={submitting || checkingPayment}
+  onClick={handleRetryPendingPayment}
+  className="px-5 py-3 bg-[#B5563C] text-white rounded-xl disabled:opacity-50"
+>
+  {checkingPayment
+    ? 'Checking Payment...'
+    : submitting
+      ? 'Processing...'
+      : 'Retry Pending Payment'}
+</button>
+
+      {/* NEW: Check Payment Status Button */}
+      <button
+        type="button"
+        disabled={submitting}
+        onClick={checkPendingOrder}
+        className="px-5 py-3 border border-[#B5563C] rounded-xl"
+      >
+        Check Payment Status
+      </button>
+
+      {/* Existing My Orders Button */}
+      <Link
+        to="/orders"
+        className="px-5 py-3 border rounded-xl"
+      >
+        Check My Orders
+      </Link>
+
+    </div>
+  </section>
+)}
 
           {pendingOrder ? null : loading || cartLoading ? (
 
