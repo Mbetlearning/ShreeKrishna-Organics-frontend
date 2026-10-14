@@ -6,9 +6,9 @@ import { ShoppingCart, Check, Zap } from 'lucide-react';
 
 import { useCart } from '../context/CartContext';
 
+import { getReviewSummary } from '../services/reviewApi';
+
 import { apiRequest } from '../services/api';
-
-
 
 // Share the combo request between all product cards (avoid one request per card).
 
@@ -50,10 +50,6 @@ function getActiveComboVariantIds() {
 
 }
 
-
-
-
-
 export default function ProductCard({ product }) {
 
   const { addToCart } = useCart();
@@ -63,11 +59,46 @@ export default function ProductCard({ product }) {
   const [selectedSize, setSelectedSize] = useState(null);
 
   const [isAdded, setIsAdded] = useState(false);
-  const [adding, setAdding] = useState(false);
 
-  const [comboVariantIds, setComboVariantIds] = useState(() => new Set());
+const [adding, setAdding] = useState(false);
 
+const [comboVariantIds, setComboVariantIds] = useState(
 
+  () => new Set()
+
+);
+
+const [reviewSummary, setReviewSummary] = useState(null);
+
+useEffect(() => {
+
+  let active = true;
+
+  setReviewSummary(null);
+
+  if (!product.id) return;
+
+  getReviewSummary(product.id)
+
+    .then((data) => {
+
+      if (active) setReviewSummary(data);
+
+    })
+
+    .catch((error) => {
+
+      console.error('Failed to load review summary:', error);
+
+    });
+
+  return () => {
+
+    active = false;
+
+  };
+
+}, [product.id]);
 
   useEffect(() => {
 
@@ -83,15 +114,11 @@ export default function ProductCard({ product }) {
 
   }, []);
 
-
-
   useEffect(() => {
 
     setSelectedSize(product.sizes?.find((s) => s.isDefault) ?? product.sizes?.[0] ?? null);
 
   }, [product]);
-
-
 
   const regularPrice = selectedSize?.regularPrice ?? product.price;
 
@@ -117,41 +144,66 @@ export default function ProductCard({ product }) {
 
   ) ?? false;
 
-
-
   const handleAddToCart = async (e) => {
+
     e.preventDefault();
+
     e.stopPropagation();
+
     if (!canPurchase || adding) return;
 
     setAdding(true);
+
     try {
+
       const success = await addToCart(product, selectedSize, 1);
+
       if (success) {
+
         setIsAdded(true);
+
         setTimeout(() => setIsAdded(false), 1500);
+
       }
+
     } catch (error) {
+
       console.error('Unable to add product to cart:', error);
+
     } finally {
+
       setAdding(false);
+
     }
+
   };
 
   const handleBuyNow = async (e) => {
+
     e.preventDefault();
+
     e.stopPropagation();
+
     if (!canPurchase || adding) return;
 
     setAdding(true);
+
     try {
+
       const success = await addToCart(product, selectedSize, 1);
+
       if (success) navigate('/checkout');
+
     } catch (error) {
+
       console.error('Unable to proceed to checkout:', error);
+
     } finally {
+
       setAdding(false);
+
     }
+
   };
 
   return (
@@ -190,8 +242,6 @@ export default function ProductCard({ product }) {
 
       </Link>
 
-
-
       <div className="p-4 sm:p-5 flex flex-col flex-grow">
 
         <div className="mb-1.5 text-[11px] font-semibold text-[#6E6259] uppercase tracking-wider">{product.categoryName}</div>
@@ -203,6 +253,22 @@ export default function ProductCard({ product }) {
         </Link>
 
         {product.tagline && <p className="mt-1 text-xs text-stone-500 line-clamp-2 leading-relaxed">{product.tagline}</p>}
+
+        {reviewSummary && Number(reviewSummary.reviewCount) > 0 && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-amber-500 text-sm">
+              {Array.from({ length: 5 }, (_, i) =>
+                i < Math.round(Number(reviewSummary.averageRating)) ? '★' : '☆'
+              ).join('')}
+            </span>
+            <span className="text-xs font-semibold text-stone-700">
+              {Number(reviewSummary.averageRating).toFixed(1)}
+            </span>
+            <span className="text-xs text-stone-500">
+              ({reviewSummary.reviewCount} reviews)
+            </span>
+          </div>
+        )}
 
         {product.sizes?.length > 0 && (
 
@@ -229,8 +295,6 @@ export default function ProductCard({ product }) {
           </div>
 
         )}
-
-
 
         <div className="mt-auto pt-4 border-t border-[#E8DFD3]/60">
 

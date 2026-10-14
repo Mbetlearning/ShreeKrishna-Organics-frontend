@@ -6,6 +6,8 @@ import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { getProductReviews, getReviewSummary } from '../services/reviewApi';
+import ProductReviews from '../components/ProductReviews';
 
 export default function ProductDetails() {
   const { slug } = useParams();
@@ -158,6 +160,7 @@ export default function ProductDetails() {
             </div>
           )}
         </div>
+        <ProductReviews key={product.id} productId={product.id} />
         {relatedProducts.length > 0 && (
           <div className="mt-16">
             <h3 className="text-2xl font-serif font-bold text-[#2B241D] mb-6">You May Also Like</h3>
