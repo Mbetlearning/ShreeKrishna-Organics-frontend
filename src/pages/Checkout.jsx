@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useRef } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
@@ -31,22 +29,26 @@ import { useToast } from '../context/ToastContext';
 import { addressApi } from '../services/addressApi';
 
 import { customerOrderApi } from '../services/customerOrderApi';
-import { paymentApi } from '../services/paymentApi';
 
-const loadRazorpay = () => new Promise((resolve, reject) => {
+import { apiRequest } from '../services/api';
+import { checkoutSessionApi } from '../services/checkoutSessionAPI';
+
+// Test Mode only. Do not turn on for a production build before completing payment/webhook tests.
+const ONLINE_TEST_ENABLED = import.meta.env.VITE_ENABLE_CHECKOUT_RAZORPAY_TEST === 'true';
+const loadRazorpayScript = () => new Promise((resolve, reject) => {
   if (window.Razorpay) return resolve();
-  const existing = document.querySelector('script[data-razorpay-checkout]');
-  if (existing) {
-    existing.addEventListener('load', () => resolve(), { once: true });
-    existing.addEventListener('error', () => reject(new Error('Razorpay failed to load.')), { once: true });
+  const found = document.querySelector('script[data-sko-razorpay]');
+  if (found) {
+    found.addEventListener('load', resolve, { once: true });
+    found.addEventListener('error', () => reject(new Error('Razorpay did not load')), { once: true });
     return;
   }
   const script = document.createElement('script');
   script.src = 'https://checkout.razorpay.com/v1/checkout.js';
   script.async = true;
-  script.dataset.razorpayCheckout = 'true';
-  script.onload = () => resolve();
-  script.onerror = () => reject(new Error('Unable to load Razorpay checkout.'));
+  script.dataset.skoRazorpay = '1';
+  script.onload = resolve;
+  script.onerror = () => reject(new Error('Razorpay did not load'));
   document.body.appendChild(script);
 });
 
@@ -175,127 +177,337 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
+
 const [checkingPayment, setCheckingPayment] = useState(false);
+
   const [savingAddress, setSavingAddress] = useState(false);
 
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('RAZORPAY');
+
+  const [paymentMethod, setPaymentMethod] = useState('COD');
+
   const [pendingOrder, setPendingOrder] = useState(null);
-  const paymentInProgress = useRef(false);
+  const [pendingSessionId, setPendingSessionId] = useState(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [sessionNotice, setSessionNotice] = useState('');
+  const paymentLock = useRef(false);
+  const autoRecoverySessionRef = useRef(null);
+  const sessionKey = user?.id != null ? `sko_checkout_session_${user.id}` :
+    user?.email ? `sko_checkout_session_${user.email}` : null;
+
   const pendingKey = user?.id != null ? `sko_pending_payment_${user.id}` :
+
     user?.email ? `sko_pending_payment_${user.email}` : null;
 
   useEffect(() => {
+
     if (!pendingKey) return;
+
     const stored = sessionStorage.getItem(pendingKey);
+
     if (!stored) return;
+
     try {
+
       const parsed = JSON.parse(stored);
+
       if (parsed?.id) setPendingOrder(parsed);
+
     } catch { sessionStorage.removeItem(pendingKey); }
+
   }, [pendingKey]);
 
-  const savePendingOrder = (order) => {
-    const next = { id: order.id, orderNumber: order.orderNumber };
-    setPendingOrder(next);
-    if (pendingKey) sessionStorage.setItem(pendingKey, JSON.stringify(next));
+  useEffect(() => {
+    if (!sessionKey) { setPendingSessionId(null); return; }
+    setPendingSessionId(sessionStorage.getItem(sessionKey));
+  }, [sessionKey]);
+
+  const rememberSession = (id) => {
+    setPendingSessionId(id);
+    if (sessionKey) sessionStorage.setItem(sessionKey, id);
+  };
+  const forgetSession = () => {
+    setPendingSessionId(null);
+    setSessionNotice('');
+    if (sessionKey) sessionStorage.removeItem(sessionKey);
   };
 
-  const clearPendingOrder = () => {
-    setPendingOrder(null);
-    if (pendingKey) sessionStorage.removeItem(pendingKey);
-  };
-const checkPendingOrder = async () => {
-  if (!pendingOrder?.id) return null;
+  const reconcileCheckoutSession = async (sessionId, { automatic = false } = {}) => {
+    if (!sessionId || checkingPayment) return null;
 
-  try {
-    const order = await customerOrderApi.getOrderById(pendingOrder.id);
-
-    if (order.paymentStatus === 'PAID') {
-      clearPendingOrder();
-      await refreshCart();
-
-      navigate('/orders', {
-        replace: true,
-        state: { placedOrderId: order.id },
-      });
-
-      return order;
-    }
-
-    if (order.status === 'CANCELLED') {
-      clearPendingOrder();
-      await loadCheckout();
-      return order;
-    }
-
-    if (order.paymentStatus === 'PENDING') {
-      addToast(
-        'Payment is still pending. Please retry or check My Orders.',
-        'info'
-      );
-    }
-
-    return order;
-  } catch (err) {
-    addToast(
-      err.message || 'Unable to check payment status.',
-      'error'
+    setCheckingPayment(true);
+    setSessionNotice(
+      automatic
+        ? 'Checking your previous payment and confirming the order...'
+        : 'Contacting the payment server...'
     );
-    return null;
+
+    try {
+      const recovery = await Promise.race([
+        checkoutSessionApi.recovery(sessionId),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(
+              new Error(
+                'Payment status check timed out. Please try again later. Do not make another payment.'
+              )
+            ),
+            20000
+          )
+        ),
+      ]);
+
+      if (
+        recovery?.sessionStatus === 'FINALIZED' &&
+        recovery?.finalizedOrderId
+      ) {
+        forgetSession();
+
+        try {
+          await refreshCart();
+        } catch (err) {
+          console.warn('Unable to refresh cart:', err);
+        }
+
+        navigate('/orders', {
+          replace: true,
+          state: { placedOrderId: recovery.finalizedOrderId },
+        });
+
+        return recovery;
+      }
+
+      if (recovery?.sessionStatus === 'ABANDONED') {
+        forgetSession();
+        setSessionNotice('Previous checkout was cancelled. You can start a fresh checkout.');
+        return recovery;
+      }
+
+      if (recovery?.assessment === 'CAPTURED_NOT_FINALIZED') {
+        setSessionNotice('Payment received. Confirming your order...');
+
+        try {
+          const finalized = await checkoutSessionApi.recoverCapturedPayment(
+            sessionId
+          );
+
+          const orderId =
+            finalized?.orderId ||
+            finalized?.finalizedOrderId;
+
+          if (finalized?.status === 'FINALIZED' && orderId) {
+            forgetSession();
+
+            try {
+              await refreshCart();
+            } catch (err) {
+              console.warn(
+                'Unable to refresh cart after payment recovery:',
+                err
+              );
+            }
+
+            addToast(
+              'Payment received and order confirmed.',
+              'success'
+            );
+
+            navigate('/orders', {
+              replace: true,
+              state: { placedOrderId: orderId },
+            });
+
+            return finalized;
+          }
+
+          setSessionNotice(
+            finalized?.message ||
+              'Payment was received, but order confirmation is still pending. Do not pay again.'
+          );
+
+          return finalized;
+        } catch (err) {
+          setSessionNotice(
+            `${
+              err.message ||
+              'Payment was detected, but automatic order confirmation could not complete.'
+            } Do not pay again.`
+          );
+
+          return null;
+        }
+      }
+
+      if (recovery?.assessment === 'NO_CAPTURED_PAYMENT_OBSERVED') {
+        setSessionNotice(
+          'No captured payment was found at this time. You may retry the same online payment, switch safely to COD, or cancel this checkout after the server rechecks Razorpay.'
+        );
+        return recovery;
+      }
+
+      if (recovery?.assessment === 'AUTHORIZED_NOT_CAPTURED') {
+        setSessionNotice(
+          'Your payment is authorized but not yet captured. Please wait and check again. Do not retry, switch to COD, or cancel yet.'
+        );
+        return recovery;
+      }
+
+      setSessionNotice(
+        `Status check completed: ${
+          recovery?.assessment || recovery?.sessionStatus || 'UNKNOWN'
+        }. ${recovery?.message || 'Please wait for payment reconciliation.'}`
+      );
+
+      return recovery;
+    } catch (err) {
+      setSessionNotice(
+        err.message ||
+          'Unable to check payment status. Do not make another payment until the status is known.'
+      );
+      return null;
+    } finally {
+      setCheckingPayment(false);
+    }
+  };
+
+  const restoreBlockingSession = async () => {
+    try {
+      const eligibility = await checkoutSessionApi.eligibility();
+
+      if (
+        eligibility?.unresolvedPayment === true &&
+        eligibility?.blockingSessionId
+      ) {
+        const blockingSessionId = eligibility.blockingSessionId;
+        rememberSession(blockingSessionId);
+
+        // Important recovery path:
+        // If the customer paid and then closed the tab/browser before the
+        // browser verification call completed, reconcile automatically when
+        // checkout is opened again. A captured payment is finalized without
+        // requiring the customer to click COD or Cancel Checkout.
+        await reconcileCheckoutSession(blockingSessionId, {
+          automatic: true,
+        });
+
+        return blockingSessionId;
+      }
+
+      return null;
+    } catch (err) {
+      console.warn('Unable to restore checkout session:', err);
+      return null;
+    }
+  };
+
+  const checkCheckoutSession = async () => {
+    if (!pendingSessionId) return;
+    await reconcileCheckoutSession(pendingSessionId);
+  };
+useEffect(() => {
+  if (!pendingSessionId) return;
+
+  // Run automatic recovery only once for each checkout session.
+  if (autoRecoverySessionRef.current === pendingSessionId) {
+    return;
   }
-};
-const handleRetryPendingPayment = async () => {
+
   if (
-    !pendingOrder?.id ||
-    submitting ||
     checkingPayment ||
-    paymentInProgress.current
+    submitting ||
+    paymentOpen
   ) {
     return;
   }
 
-  setCheckingPayment(true);
+  autoRecoverySessionRef.current = pendingSessionId;
+
+  const timer = setTimeout(() => {
+    setSessionNotice(
+      'Checking your previous payment and confirming the order...'
+    );
+
+    checkCheckoutSession();
+  }, 300);
+
+  return () => clearTimeout(timer);
+}, [pendingSessionId]);
+
+  const clearPendingOrder = () => {
+
+    setPendingOrder(null);
+
+    if (pendingKey) sessionStorage.removeItem(pendingKey);
+
+  };
+
+const checkPendingOrder = async () => {
+
+  if (!pendingOrder?.id) return null;
 
   try {
-    const order = await customerOrderApi.getOrderById(
-      pendingOrder.id
-    );
+
+    const order = await customerOrderApi.getOrderById(pendingOrder.id);
 
     if (order.paymentStatus === 'PAID') {
+
       clearPendingOrder();
 
+      await refreshCart();
+
       navigate('/orders', {
+
         replace: true,
+
         state: { placedOrderId: order.id },
+
       });
 
-      return;
+      return order;
+
     }
 
-    if (
-      order.status !== 'PLACED' ||
-      order.paymentStatus !== 'PENDING' ||
-      order.paymentMethod !== 'RAZORPAY'
-    ) {
+    if (order.status === 'CANCELLED') {
+
+      clearPendingOrder();
+
+      await loadCheckout();
+
+      return order;
+
+    }
+
+    if (order.paymentStatus === 'PENDING') {
+
       addToast(
-        'This order is not eligible for payment retry. Check My Orders.',
-        'error'
+
+        'Payment is still pending. Please retry or check My Orders.',
+
+        'info'
+
       );
-      return;
+
     }
 
-    await startRazorpayPayment(order);
+    return order;
+
   } catch (err) {
+
     addToast(
-      err.message || 'Unable to check payment status. Please try again.',
+
+      err.message || 'Unable to check payment status.',
+
       'error'
+
     );
-  } finally {
-    setCheckingPayment(false);
+
+    return null;
+
   }
+
 };
-  const loadCheckout = async () => {
+
+const loadCheckout = async () => {
 
     setLoading(true);
 
@@ -411,7 +623,14 @@ const handleRetryPendingPayment = async () => {
 
     };
 
-    initialize();
+    const initializePage = async () => {
+      await initialize();
+      if (active) {
+        await restoreBlockingSession();
+      }
+    };
+
+    initializePage();
 
     return () => {
 
@@ -523,74 +742,427 @@ const handleRetryPendingPayment = async () => {
 
   };
 
-  const startRazorpayPayment = async (order) => {
-    if (paymentInProgress.current) return;
-    paymentInProgress.current = true;
-    setSubmitting(true);
-    try {
-      const key = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!key) throw new Error('Razorpay public Key ID is not configured.');
-      await loadRazorpay();
-      const payment = await paymentApi.createRazorpayPayment(order.id);
-      const amountPaise = Math.round(Number(payment.amount) * 100);
-      if (!Number.isSafeInteger(amountPaise) || amountPaise <= 0) {
-        throw new Error('Invalid payment amount returned by server.');
-      }
-      if (!payment.razorpayOrderId) throw new Error('Missing Razorpay order ID.');
-      const razorpay = new window.Razorpay({
-        key,
-        amount: amountPaise,
-        currency: payment.currency || 'INR',
-        name: 'ShreeKrishna Organics',
-        description: `Payment for order ${order.orderNumber || order.id}`,
-        order_id: payment.razorpayOrderId,
-        prefill: { email: user?.email || '' },
-        theme: { color: '#B5563C' },
-        handler: async (result) => {
-          setSubmitting(true);
-          try {
-            const verified = await paymentApi.verifyRazorpayPayment(order.id, result);
-            if (verified.status !== 'PAID') {
-              throw new Error('Payment has not been confirmed.');
-            }
-            clearPendingOrder();
-            addToast('Payment verified successfully!', 'success');
-            try { await refreshCart(); } catch (e) { console.warn(e); }
-            navigate('/orders', { replace: true, state: { placedOrderId: order.id } });
-          } catch (err) {
-            addToast(`${err.message || 'Verification pending.'} Do not pay again until payment status is checked.`, 'error');
-          } finally {
-            paymentInProgress.current = false;
-            setSubmitting(false);
-          }
-        },
-       modal: {
-  ondismiss: () => {
-    paymentInProgress.current = false;
-    setSubmitting(false);
+  const openRazorpayForSession = async (sessionId, payment) => {
+    const key = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!key) {
+      throw new Error('VITE_RAZORPAY_KEY_ID (public Test Key ID) is missing.');
+    }
 
-    addToast(
-      'Payment window closed. Your order is saved. Check payment status before retrying.',
-      'info'
-    );
-  },
-},
-      });
-      razorpay.on('payment.failed', () => {
-        addToast('Payment failed. Please check your order before retrying.', 'error');
-      });
-      razorpay.open();
+    if (!payment?.razorpayOrderId) {
+      throw new Error(
+        'Payment state is uncertain. Check Payment Status before trying again.'
+      );
+    }
+
+    const amountPaise = Math.round(Number(payment.amount) * 100);
+    if (!Number.isSafeInteger(amountPaise) || amountPaise <= 0) {
+      throw new Error('Unexpected checkout amount. Payment blocked.');
+    }
+
+    await loadRazorpayScript();
+    setPaymentOpen(true);
+
+    const checkout = new window.Razorpay({
+      key,
+      order_id: payment.razorpayOrderId,
+      amount: amountPaise,
+      currency: payment.currency || 'INR',
+      name: 'ShreeKrishna Organics',
+      description: 'Secure online checkout',
+      prefill: { email: user?.email || '' },
+      handler: async (result) => {
+        setPaymentOpen(false);
+        setSubmitting(true);
+        setSessionNotice('Verifying captured payment. Do not pay again.');
+
+        try {
+          const verified = await checkoutSessionApi.verify(sessionId, result);
+
+          if (verified?.status !== 'FINALIZED' || !verified?.orderId) {
+            throw new Error(
+              'Verification is not finalized. Check payment status.'
+            );
+          }
+
+          forgetSession();
+
+          try {
+            await refreshCart();
+          } catch (err) {
+            console.warn('Unable to refresh cart after payment:', err);
+          }
+
+          addToast('Payment verified. Order created!', 'success');
+          navigate('/orders', {
+            replace: true,
+            state: { placedOrderId: verified.orderId },
+          });
+        } catch (err) {
+          setSessionNotice(
+            `${err.message || 'Verification pending.'} ` +
+              'Do not pay again; check payment status.'
+          );
+          addToast(
+            'Payment may have succeeded. Check status; do not pay again.',
+            'error'
+          );
+        } finally {
+          setSubmitting(false);
+          paymentLock.current = false;
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          setPaymentOpen(false);
+          setSubmitting(false);
+          paymentLock.current = false;
+          setSessionNotice(
+            'Razorpay closed. No new Razorpay order will be created. ' +
+              'Use Check Payment Status, or Retry Same Online Payment to continue this checkout.'
+          );
+        },
+      },
+    });
+
+    checkout.on('payment.failed', () => {
+      setSessionNotice(
+        'This payment attempt was reported failed. Check status first; ' +
+          'then you may retry the SAME online checkout session.'
+      );
+    });
+
+    checkout.open();
+  };
+
+  const resumePendingOnlinePayment = async () => {
+    if (!ONLINE_TEST_ENABLED) {
+      addToast('Online payment is not enabled for this environment.', 'info');
+      return;
+    }
+
+    if (
+      !pendingSessionId ||
+      paymentLock.current ||
+      submitting ||
+      checkingPayment ||
+      paymentOpen
+    ) {
+      return;
+    }
+
+    paymentLock.current = true;
+    setSubmitting(true);
+    setSessionNotice('Checking the existing payment before retrying...');
+
+    try {
+      const recovery = await checkoutSessionApi.recovery(pendingSessionId);
+
+      if (
+        recovery?.sessionStatus === 'FINALIZED' &&
+        recovery?.finalizedOrderId
+      ) {
+        const orderId = recovery.finalizedOrderId;
+        forgetSession();
+        try {
+          await refreshCart();
+        } catch (err) {
+          console.warn('Unable to refresh cart:', err);
+        }
+        navigate('/orders', {
+          replace: true,
+          state: { placedOrderId: orderId },
+        });
+        return;
+      }
+
+      if (recovery?.assessment === 'CAPTURED_NOT_FINALIZED') {
+        setSessionNotice('Payment captured. Finalizing your order...');
+
+        const finalized =
+          await checkoutSessionApi.recoverCapturedPayment(pendingSessionId);
+
+        const orderId = finalized?.orderId || finalized?.finalizedOrderId;
+        if (finalized?.status === 'FINALIZED' && orderId) {
+          forgetSession();
+          try {
+            await refreshCart();
+          } catch (err) {
+            console.warn('Unable to refresh cart:', err);
+          }
+          addToast('Payment recovered and order confirmed.', 'success');
+          navigate('/orders', {
+            replace: true,
+            state: { placedOrderId: orderId },
+          });
+          return;
+        }
+
+        throw new Error(
+          finalized?.message ||
+            'Captured payment is still awaiting finalization. Do not pay again.'
+        );
+      }
+
+      if (recovery?.assessment === 'AUTHORIZED_NOT_CAPTURED') {
+        setSessionNotice(
+          'A payment is authorized and may still be captured. Do not retry or choose COD yet.'
+        );
+        return;
+      }
+
+      if (recovery?.assessment !== 'NO_CAPTURED_PAYMENT_OBSERVED') {
+        setSessionNotice(
+          recovery?.message ||
+            'Payment state is still uncertain. Do not start another payment.'
+        );
+        return;
+      }
+
+      // IMPORTANT: start-payment is intentionally called with the SAME session ID.
+      // The backend reuses the existing PAYMENT_PENDING Razorpay order; it does not
+      // create a new checkout session or a second Razorpay order.
+      const payment = await checkoutSessionApi.startPayment(pendingSessionId);
+      await openRazorpayForSession(pendingSessionId, payment);
     } catch (err) {
-      paymentInProgress.current = false;
+      setSessionNotice(
+        err.message ||
+          'Unable to safely resume this payment. Check status again before retrying.'
+      );
+      addToast(
+        err.message || 'Unable to resume the existing payment.',
+        'error'
+      );
+      paymentLock.current = false;
+    } finally {
       setSubmitting(false);
-      addToast(err.message || 'Could not start Razorpay payment.', 'error');
+    }
+  };
+
+  const switchPendingPaymentToCod = async () => {
+    if (
+      !pendingSessionId ||
+      paymentLock.current ||
+      submitting ||
+      checkingPayment ||
+      paymentOpen
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Switch this checkout to Cash on Delivery? The server will first check Razorpay so a captured or authorized payment is not duplicated.'
+    );
+    if (!confirmed) return;
+
+    paymentLock.current = true;
+    setSubmitting(true);
+    setSessionNotice('Checking Razorpay before switching this checkout to Cash on Delivery...');
+
+    try {
+      const result = await checkoutSessionApi.switchToCod(pendingSessionId);
+      const orderId = result?.orderId || result?.finalizedOrderId;
+
+      if (!orderId) {
+        throw new Error(
+          result?.message || 'The payment method could not be changed safely.'
+        );
+      }
+
+      forgetSession();
+      try {
+        await refreshCart();
+      } catch (err) {
+        console.warn('Unable to refresh cart after payment-mode switch:', err);
+      }
+
+      if (result?.switchedToCod === true || result?.assessment === 'COD_ORDER_CREATED') {
+        addToast('Order placed successfully with Cash on Delivery.', 'success');
+      } else {
+        addToast(
+          result?.message || 'Online payment was already captured and the order was finalized.',
+          'success'
+        );
+      }
+
+      navigate('/orders', {
+        replace: true,
+        state: { placedOrderId: orderId },
+      });
+    } catch (err) {
+      setSessionNotice(
+        err.message ||
+          'Unable to switch to COD safely. Check payment status before trying again.'
+      );
+      addToast(
+        err.message || 'Unable to switch this checkout to Cash on Delivery.',
+        'error'
+      );
+    } finally {
+      setSubmitting(false);
+      paymentLock.current = false;
+    }
+  };
+
+  const cancelPendingCheckout = async () => {
+    if (
+      !pendingSessionId ||
+      paymentLock.current ||
+      submitting ||
+      checkingPayment ||
+      paymentOpen
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Cancel this checkout and continue shopping? The server will first check Razorpay. If a payment is captured, authorized, processing, or otherwise uncertain, cancellation will be blocked.'
+    );
+    if (!confirmed) return;
+
+    paymentLock.current = true;
+    setSubmitting(true);
+    setSessionNotice('Checking Razorpay before cancelling this checkout...');
+
+    try {
+      const result = await checkoutSessionApi.cancelCheckout(pendingSessionId);
+      const orderId = result?.finalizedOrderId || result?.orderId;
+
+      // A payment may have completed while the user was trying to cancel.
+      if (
+        result?.status === 'FINALIZED' ||
+        result?.assessment === 'ONLINE_PAYMENT_FINALIZED'
+      ) {
+        forgetSession();
+        try {
+          await refreshCart();
+        } catch (err) {
+          console.warn('Unable to refresh cart after payment finalization:', err);
+        }
+
+        addToast(
+          result?.message || 'Payment was already completed, so your order was confirmed instead of cancelled.',
+          'success'
+        );
+
+        navigate('/orders', {
+          replace: true,
+          state: { placedOrderId: orderId },
+        });
+        return;
+      }
+
+      if (result?.cancelled === true || result?.status === 'ABANDONED') {
+        forgetSession();
+
+        try {
+          await refreshCart();
+        } catch (err) {
+          console.warn('Unable to refresh cart after checkout cancellation:', err);
+        }
+
+        addToast(
+          result?.message || 'Checkout cancelled. You can modify your cart and continue shopping.',
+          'success'
+        );
+
+        navigate('/cart', { replace: true });
+        return;
+      }
+
+      throw new Error(
+        result?.message || 'This checkout could not be cancelled safely.'
+      );
+    } catch (err) {
+      setSessionNotice(
+        err.message ||
+          'Unable to cancel this checkout safely. Check payment status before trying again.'
+      );
+      addToast(
+        err.message || 'Unable to cancel this checkout safely.',
+        'error'
+      );
+    } finally {
+      setSubmitting(false);
+      paymentLock.current = false;
+    }
+  };
+
+  const startOnlineCheckout = async () => {
+    if (!ONLINE_TEST_ENABLED) {
+      addToast('Online payment is not enabled for this environment.', 'info');
+      return;
+    }
+
+    if (paymentLock.current || submitting || pendingOrder) {
+      return;
+    }
+
+    // A remembered unresolved session must be resumed, never replaced by a new one.
+    if (pendingSessionId) {
+      await resumePendingOnlinePayment();
+      return;
+    }
+
+    if (
+      !selectedAddressId ||
+      !summary?.items?.length ||
+      summary.items.some((item) => !item.available)
+    ) {
+      addToast('Select a valid address and check your cart.', 'error');
+      return;
+    }
+
+    paymentLock.current = true;
+    setSubmitting(true);
+
+    try {
+      const eligibility = await checkoutSessionApi.eligibility();
+
+      if (eligibility?.unresolvedPayment === true) {
+        if (eligibility?.blockingSessionId) {
+          rememberSession(eligibility.blockingSessionId);
+          setSessionNotice(
+            eligibility.message ||
+              'A previous payment requires reconciliation.'
+          );
+        }
+
+        throw new Error(
+          'A previous online checkout already exists. Use Retry Same Online Payment instead of creating another charge.'
+        );
+      }
+
+      if (eligibility?.canStartNewOnlineCheckout !== true) {
+        throw new Error(
+          eligibility?.message || 'Online checkout is currently blocked.'
+        );
+      }
+
+      const draft = await checkoutSessionApi.createDraft(selectedAddressId);
+      if (!draft?.id) {
+        throw new Error('Checkout session was not created.');
+      }
+
+      // Save the session before contacting Razorpay.
+      rememberSession(draft.id);
+
+      const payment = await checkoutSessionApi.startPayment(draft.id);
+      await openRazorpayForSession(draft.id, payment);
+    } catch (err) {
+      setPaymentOpen(false);
+      setSessionNotice(err.message || 'Online checkout could not be started.');
+      addToast(err.message || 'Unable to start payment.', 'error');
+      paymentLock.current = false;
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handlePlaceOrder = async () => {
-    if (submitting || savingAddress || loading || paymentInProgress.current) return;
-    if (pendingOrder) {
-      addToast('Please resolve your pending online order first.', 'error');
+    if (submitting || savingAddress || loading || paymentLock.current) return;
+    if (paymentMethod === 'RAZORPAY') return startOnlineCheckout();
+    if (pendingSessionId || pendingOrder) {
+      addToast('An earlier payment requires reconciliation before placing COD.', 'error');
       return;
     }
     if (!selectedAddressId) return addToast('Please select a delivery address.', 'error');
@@ -599,24 +1171,19 @@ const handleRetryPendingPayment = async () => {
       return addToast('Some products are unavailable. Update your cart.', 'error');
     }
     setSubmitting(true);
-    let createdOrder = null;
     try {
-      createdOrder = await customerOrderApi.placeOrder(selectedAddressId, paymentMethod);
-      if (!createdOrder?.id) throw new Error('Order created without an ID. Check My Orders.');
+      const eligibility = await checkoutSessionApi.eligibility();
+      if (eligibility?.canAttemptCOD !== true || eligibility?.unresolvedPayment === true) {
+        throw new Error(eligibility?.message || 'Earlier payment unresolved.');
+      }
+      const order = await customerOrderApi.placeOrder(selectedAddressId, 'COD');
+      if (!order?.id) throw new Error('Order confirmation unavailable. Check your orders before retrying.');
       try { await refreshCart(); } catch (e) { console.warn(e); }
-      if (paymentMethod === 'RAZORPAY') {
-        savePendingOrder(createdOrder);
-        setSubmitting(false);
-        await startRazorpayPayment(createdOrder);
-        return;
-      }
-      addToast(`Order ${createdOrder.orderNumber || createdOrder.id} placed successfully!`, 'success');
-      navigate('/orders', { replace: true, state: { placedOrderId: createdOrder.id } });
+      addToast(`Order ${order.orderNumber || order.id} placed successfully!`, 'success');
+      navigate('/orders', { replace: true, state: { placedOrderId: order.id } });
     } catch (err) {
-      addToast(err.message || 'Order could not be placed. Check My Orders before retrying.', 'error');
-      if (!createdOrder) {
-        try { setSummary(await customerOrderApi.getCheckoutSummary()); } catch { /* keep original error */ }
-      }
+      addToast(err.message || 'Order could not be placed. Check your orders before retrying.', 'error');
+      try { setSummary(await customerOrderApi.getCheckoutSummary()); } catch { /* preserve original error */ }
     } finally {
       setSubmitting(false);
     }
@@ -627,8 +1194,11 @@ const handleRetryPendingPayment = async () => {
   const hasUnavailableItems = items.some((item) => !item.available);
 
   const noItems = !loading && items.length === 0;
+
   const subtotal = Number(summary?.subtotal || 0);
+
   const codCharge = paymentMethod === 'COD' ? Math.round(subtotal * 5) / 100 : 0;
+
   const payableTotal = Number(summary?.totalAmount || 0) + codCharge;
 
   const fieldClass =
@@ -747,56 +1317,100 @@ const handleRetryPendingPayment = async () => {
 
         )}
 
-            {pendingOrder && (
+{pendingSessionId && !paymentOpen && (
+  <section className="mb-6 bg-white border border-amber-300 rounded-2xl p-5 space-y-3">
+    <h2 className="font-bold text-stone-900">Online checkout payment needs confirmation</h2>
+    <p className="text-sm text-stone-600">{sessionNotice || 'A prior checkout session exists. Do not pay again until its status is confirmed.'}</p>
+    <p className="text-xs text-stone-500 break-all">Checkout Session: {pendingSessionId}</p>
+    <button type="button" onClick={checkCheckoutSession} disabled={checkingPayment || submitting}
+      className="px-5 py-3 border border-[#B5563C] rounded-xl disabled:opacity-50">
+      {checkingPayment ? 'Checking...' : 'Check Payment Status'}
+    </button>
+    <button
+      type="button"
+      onClick={resumePendingOnlinePayment}
+      disabled={checkingPayment || submitting || paymentOpen || !ONLINE_TEST_ENABLED}
+      className="ml-3 px-5 py-3 bg-[#B5563C] text-white rounded-xl disabled:opacity-50"
+    >
+      {submitting ? 'Working...' : 'Retry Same Online Payment'}
+    </button>
+    <button
+      type="button"
+      onClick={switchPendingPaymentToCod}
+      disabled={checkingPayment || submitting || paymentOpen}
+      className="ml-3 px-5 py-3 bg-green-700 text-white rounded-xl disabled:opacity-50"
+    >
+      {submitting ? 'Checking Payment...' : 'Switch to COD & Place Order'}
+    </button>
+    <button
+      type="button"
+      onClick={cancelPendingCheckout}
+      disabled={checkingPayment || submitting || paymentOpen}
+      className="ml-3 px-5 py-3 border border-stone-400 text-stone-700 rounded-xl disabled:opacity-50"
+    >
+      {submitting ? 'Checking Payment...' : 'Cancel This Checkout & Continue Shopping'}
+    </button>
+    <p className="text-xs text-amber-800">Retry continues the same Razorpay order. Switch to COD converts this same checkout into one COD order. Cancel Checkout first verifies Razorpay, releases the checkout reservation only when safe, keeps your current cart unchanged, and lets you start a fresh checkout.</p>
+  </section>
+)}
+
+{pendingOrder && (
+
   <section className="mb-6 bg-white border border-amber-300 rounded-2xl p-5 space-y-3">
 
     <h2 className="font-bold text-stone-900">
-      Online payment pending — Order {pendingOrder.orderNumber || pendingOrder.id}
+
+      Previous online order needs review — {pendingOrder.orderNumber || pendingOrder.id}
+
     </h2>
 
     <p className="text-sm text-stone-600">
-      Your order is already created and the cart has been cleared.
-      Check My Orders before retrying if a payment may have been deducted.
+
+      This order was created using the old online checkout. Check its payment status before placing another order. You can view address and payment choices below, but checkout submission is blocked until this order is resolved.
+
     </p>
 
     <div className="flex flex-wrap gap-3">
 
-      <button
-  type="button"
-  disabled={submitting || checkingPayment}
-  onClick={handleRetryPendingPayment}
-  className="px-5 py-3 bg-[#B5563C] text-white rounded-xl disabled:opacity-50"
->
-  {checkingPayment
-    ? 'Checking Payment...'
-    : submitting
-      ? 'Processing...'
-      : 'Retry Pending Payment'}
-</button>
-
       {/* NEW: Check Payment Status Button */}
+
       <button
+
         type="button"
+
         disabled={submitting}
+
         onClick={checkPendingOrder}
+
         className="px-5 py-3 border border-[#B5563C] rounded-xl"
+
       >
+
         Check Payment Status
+
       </button>
 
       {/* Existing My Orders Button */}
+
       <Link
+
         to="/orders"
+
         className="px-5 py-3 border rounded-xl"
+
       >
+
         Check My Orders
+
       </Link>
 
     </div>
+
   </section>
+
 )}
 
-          {pendingOrder ? null : loading || cartLoading ? (
+          {loading || cartLoading ? (
 
           <div className="bg-white p-12 rounded-3xl text-center">
 
@@ -1191,21 +1805,33 @@ const handleRetryPendingPayment = async () => {
               </section>
 
               <section className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8DFD3]">
+
   <h2 className="font-serif font-bold text-lg text-[#2B241D] flex items-center gap-2 pb-4 border-b border-[#E8DFD3]">
+
     <CreditCard className="w-5 h-5 text-[#B5563C]" /> Payment Method
+
   </h2>
+
   <div className="mt-5 space-y-3">
-    <label className={`flex gap-3 p-4 rounded-2xl border-2 cursor-pointer ${paymentMethod === 'RAZORPAY' ? 'border-[#B5563C] bg-[#B5563C]/5' : 'border-[#E8DFD3]'}`}>
-      <input type="radio" name="paymentMethod" checked={paymentMethod === 'RAZORPAY'} onChange={() => setPaymentMethod('RAZORPAY')} />
+
+    <label className={`flex gap-3 p-4 rounded-2xl border-2 ${ONLINE_TEST_ENABLED ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'} ${paymentMethod === 'RAZORPAY' ? 'border-[#B5563C] bg-[#B5563C]/5' : 'border-[#E8DFD3]'}`}>
+      <input type="radio" name="paymentMethod" disabled={!ONLINE_TEST_ENABLED} checked={paymentMethod === 'RAZORPAY'} onChange={() => setPaymentMethod('RAZORPAY')} />
       <CreditCard className="text-[#B5563C]" />
-      <span><strong>Pay Online (Razorpay)</strong><span className="block text-xs text-stone-500">UPI, cards and supported methods</span></span>
+      <span><strong>Pay Online (Razorpay)</strong><span className="block text-xs text-stone-500">{ONLINE_TEST_ENABLED ? 'Razorpay Test Mode — UPI / card' : 'Temporarily unavailable — Test Mode integration only'}</span></span>
     </label>
+
     <label className={`flex gap-3 p-4 rounded-2xl border-2 cursor-pointer ${paymentMethod === 'COD' ? 'border-[#B5563C] bg-[#B5563C]/5' : 'border-[#E8DFD3]'}`}>
+
       <input type="radio" name="paymentMethod" checked={paymentMethod === 'COD'} onChange={() => setPaymentMethod('COD')} />
+
       <Banknote className="text-green-700" />
+
       <span><strong>Cash on Delivery (COD)</strong><span className="block text-xs text-stone-500">Additional 5% COD charge</span></span>
+
     </label>
+
   </div>
+
 </section>
 
               {user?.email && (
@@ -1369,8 +1995,11 @@ const handleRetryPendingPayment = async () => {
                   </div>
 
                   {paymentMethod === 'COD' && (
+
   <div className="flex justify-between"><span>COD charge (5%)</span><span>{money(codCharge)}</span></div>
+
 )}
+
 <div className="flex justify-between pt-4 border-t border-[#E8DFD3] font-bold text-[#2B241D] text-lg">
 
                     <span>Total Amount</span>
@@ -1407,7 +2036,10 @@ const handleRetryPendingPayment = async () => {
 
                     !selectedAddressId ||
 
-                    hasUnavailableItems
+                    hasUnavailableItems ||
+                      Boolean(pendingOrder) ||
+                      Boolean(pendingSessionId) ||
+                      (paymentMethod === 'RAZORPAY' && !ONLINE_TEST_ENABLED)
 
                   }
 
@@ -1416,10 +2048,12 @@ const handleRetryPendingPayment = async () => {
                 >
 
                   {submitting
-
-                    ? 'Placing Order...'
-
-                    : `${paymentMethod === 'COD' ? 'Place COD Order' : 'Pay Online'} — ${money(payableTotal)}`}
+                    ? paymentMethod === 'RAZORPAY'
+                      ? 'Opening Secure Payment...'
+                      : 'Placing COD Order...'
+                    : paymentMethod === 'RAZORPAY'
+                      ? `Pay Online — ${money(payableTotal)}`
+                      : `Place COD Order — ${money(payableTotal)}`}
 
                 </button>
 
