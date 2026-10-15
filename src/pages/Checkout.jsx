@@ -838,7 +838,20 @@ export default function Checkout() {
 
   const codCharge = paymentMethod === 'COD' ? Math.round(subtotal * 5) / 100 : 0;
 
+  // Backend summary.totalAmount already accounts for GST (inclusive or exclusive).
+  // COD surcharge is calculated on the product subtotal, matching the backend.
   const payableTotal = Number(summary?.totalAmount || 0) + codCharge;
+
+  // Split the server-calculated GST in paise to avoid a 1-paisa rounding mismatch.
+  // This display assumes a 5% intra-state GST rate (CGST 2.5% + SGST 2.5%).
+  const gstPaise = Math.round(Number(summary?.taxAmount || 0) * 100);
+  const cgstPaise = Math.ceil(gstPaise / 2);
+  const sgstPaise = gstPaise - cgstPaise;
+  // GST is part of the subtotal, not an additional charge.
+  // Calculate the pre-tax product price in paise to preserve exact totals.
+  const subtotalPaise = Math.round(subtotal * 100);
+  const productPriceExcludingGst = (subtotalPaise - gstPaise) / 100;
+
 
   const fieldClass =
 
@@ -1570,65 +1583,56 @@ export default function Checkout() {
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-[#E8DFD3] text-sm">
+                  <div className="flex justify-between">
+                    <span>Product Price (Excluding GST)</span>
+                    <span>{money(productPriceExcludingGst)}</span>
+                  </div>
 
                   <div className="flex justify-between">
+                    <span>CGST (2.5%) — Included</span>
+                    <span>{money(cgstPaise / 100)}</span>
+                  </div>
 
-                    <span>Subtotal</span>
+                  <div className="flex justify-between">
+                    <span>SGST (2.5%) — Included</span>
+                    <span>{money(sgstPaise / 100)}</span>
+                  </div>
 
+                  <div className="flex justify-between font-semibold text-[#2B241D] pt-2 border-t border-[#E8DFD3]">
+                    <span>Product Price (Including GST)</span>
                     <span>{money(summary.subtotal)}</span>
-
                   </div>
 
                   <div className="flex justify-between">
-
-                    <span>Delivery</span>
-
-                    <span>
-
-                      {Number(summary.deliveryCharge) === 0
-
-                        ? 'FREE'
-
-                        : money(summary.deliveryCharge)}
-
-                    </span>
-
+                    <span>Delivery Charge</span>
+                    <span>{Number(summary.deliveryCharge) === 0 ? 'FREE' : money(summary.deliveryCharge)}</span>
                   </div>
 
-                  <div className="flex justify-between">
-
-                    <span>Discount</span>
-
-                    <span>
-
-                      -{money(summary.discountAmount)}
-
-                    </span>
-
-                  </div>
-
-                  <div className="flex justify-between">
-
-                    <span>Tax</span>
-
-                    <span>{money(summary.taxAmount)}</span>
-
-                  </div>
+                  {Number(summary.discountAmount || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span>Discount</span>
+                      <span>-{money(summary.discountAmount)}</span>
+                    </div>
+                  )}
 
                   {paymentMethod === 'COD' && (
+                    <div className="flex justify-between">
+                      <span>COD Charge (5%)</span>
+                      <span>{money(codCharge)}</span>
+                    </div>
+                  )}
 
-  <div className="flex justify-between"><span>COD charge (5%)</span><span>{money(codCharge)}</span></div>
+                  <p className="text-xs text-green-700">
+                    GST is already included in the product price. No additional product GST is charged.
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    CGST/SGST split shown assumes 5% intra-state GST. For other tax rates or inter-state supplies, the backend must provide the applicable tax breakdown.
+                  </p>
 
-)}
-
-<div className="flex justify-between pt-4 border-t border-[#E8DFD3] font-bold text-[#2B241D] text-lg">
-
-                    <span>Total Amount</span>
-
+                  <div className="flex justify-between pt-4 border-t border-[#E8DFD3] font-bold text-[#2B241D] text-lg">
+                    <span>Total Payable</span>
                     <span>{money(payableTotal)}</span>
-
                   </div>
-
                 </div>
 
                 {hasUnavailableItems && (

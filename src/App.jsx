@@ -1,4 +1,6 @@
+
 import React, { useEffect } from "react";
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,6 +15,7 @@ import { AuthProvider } from "./context/AuthContext";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import ProductDetails from "./pages/ProductDetails";
@@ -53,8 +56,16 @@ import AdminReviews from "./admin/pages/AdminReviews";
 import AdminSettings from "./admin/pages/AdminSettings";
 import AdminHotDeals from "./admin/pages/AdminHotDeals";
 import AdminComboOffers from "./admin/pages/AdminComboOffers";
-import ProtectedRoute from './components/ProtectedRoute';
 
+/* WEBSITE TESTIMONIALS - NEW */
+import AdminTestimonials from "./admin/pages/AdminTestimonials";
+
+/* PROTECTED ROUTE */
+import ProtectedRoute from "./components/ProtectedRoute";
+
+/* =========================================================
+   SCROLL TO TOP
+========================================================= */
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -65,9 +76,13 @@ function ScrollToTop() {
   return null;
 }
 
+/* =========================================================
+   CUSTOMER WEBSITE LAYOUT
+========================================================= */
 function WebsiteLayout() {
   return (
     <div className="flex flex-col min-h-screen font-sans selection:bg-[#B5563C] selection:text-[#FAF6EF]">
+
       <Navbar />
 
       <main className="flex-grow">
@@ -75,86 +90,185 @@ function WebsiteLayout() {
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
 
-          <Route path="/wood-pressed-oils" element={<WoodPressedOils />} />
+          {/* CATEGORY PAGES */}
+          <Route
+            path="/wood-pressed-oils"
+            element={<WoodPressedOils />}
+          />
           <Route path="/a2-ghee" element={<A2Ghee />} />
           <Route path="/jaggery" element={<Jaggery />} />
-          <Route path="/health-supplements" element={<HealthSupplements />} />
+          <Route
+            path="/health-supplements"
+            element={<HealthSupplements />}
+          />
           <Route path="/hot-deals" element={<HotDeals />} />
-          <Route path="/healthy-combos" element={<HealthyCombos />} />
+          <Route
+            path="/healthy-combos"
+            element={<HealthyCombos />}
+          />
 
+          {/* BLOG PAGES */}
           <Route path="/blogs" element={<Blogs />} />
-          <Route path="/blogs/medicinal-recipes" element={<MedicinalRecipes />} />
-          <Route path="/blogs/healthy-recipes" element={<HealthyRecipes />} />
+          <Route
+            path="/blogs/medicinal-recipes"
+            element={<MedicinalRecipes />}
+          />
+          <Route
+            path="/blogs/healthy-recipes"
+            element={<HealthyRecipes />}
+          />
 
-          <Route path="/product/:slug" element={<ProductDetails />} />
+          {/* SHOPPING */}
+          <Route
+            path="/product/:slug"
+            element={<ProductDetails />}
+          />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
 
+          {/* CUSTOMER ACCOUNT */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/orders" element={<Orders />} />
 
+          {/* INFORMATION PAGES */}
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
 
+          {/* NOT FOUND */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
       <Footer />
+
     </div>
   );
 }
 
-
+/* =========================================================
+   APPLICATION ROUTES
+========================================================= */
 function AppRoutes() {
   return (
     <Routes>
-      {/* Admin login: public route */}
-      <Route path="/admin/login" element={<AdminLogin />} />
 
-      {/* /admin redirects to admin login */}
+      {/* ADMIN LOGIN - PUBLIC */}
       <Route
-        path="/admin"
-        element={<Navigate to="/admin/login" replace />}
+        path="/admin/login"
+        element={<AdminLogin />}
       />
 
-      {/* Protected admin routes */}
+      {/* ADMIN ROOT REDIRECT */}
+      <Route
+        path="/admin"
+        element={
+          <Navigate
+            to="/admin/login"
+            replace
+          />
+        }
+      />
+
+      {/* PROTECTED ADMIN ROUTES */}
       <Route
         element={
           <ProtectedRoute
-            allowedRoles={['ADMIN']}
+            allowedRoles={["ADMIN"]}
             loginPath="/admin/login"
             fallbackPath="/"
           />
         }
       >
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<AdminDashboard />} />
+        <Route
+          path="/admin"
+          element={<AdminLayout />}
+        >
 
-          <Route path="products" element={<AdminProducts />} />
-          <Route path="products/add" element={<AddProduct />} />
-          <Route path="products/edit/:id" element={<EditProduct />} />
+          {/* DASHBOARD */}
+          <Route
+            path="dashboard"
+            element={<AdminDashboard />}
+          />
 
-          <Route path="hot-deals" element={<AdminHotDeals />} />
-          <Route path="combo-offers" element={<AdminComboOffers />} />
+          {/* PRODUCTS */}
+          <Route
+            path="products"
+            element={<AdminProducts />}
+          />
+          <Route
+            path="products/add"
+            element={<AddProduct />}
+          />
+          <Route
+            path="products/edit/:id"
+            element={<EditProduct />}
+          />
 
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="customers" element={<AdminCustomers />} />
-          <Route path="blogs" element={<AdminBlogs />} />
-          <Route path="media" element={<AdminMedia />} />
-          <Route path="reviews" element={<AdminReviews />} />
-          <Route path="settings" element={<AdminSettings />} />
+          {/* OFFERS */}
+          <Route
+            path="hot-deals"
+            element={<AdminHotDeals />}
+          />
+          <Route
+            path="combo-offers"
+            element={<AdminComboOffers />}
+          />
+
+          {/* ORDERS AND CUSTOMERS */}
+          <Route
+            path="orders"
+            element={<AdminOrders />}
+          />
+          <Route
+            path="customers"
+            element={<AdminCustomers />}
+          />
+
+          {/* BLOGS AND MEDIA */}
+          <Route
+            path="blogs"
+            element={<AdminBlogs />}
+          />
+          <Route
+            path="media"
+            element={<AdminMedia />}
+          />
+
+          {/* PRODUCT REVIEWS */}
+          <Route
+            path="reviews"
+            element={<AdminReviews />}
+          />
+
+          {/* WEBSITE TESTIMONIALS - NEW */}
+          <Route
+            path="testimonials"
+            element={<AdminTestimonials />}
+          />
+
+          {/* SETTINGS */}
+          <Route
+            path="settings"
+            element={<AdminSettings />}
+          />
+
         </Route>
       </Route>
 
-      {/* Customer website */}
-      <Route path="/*" element={<WebsiteLayout />} />
+      {/* CUSTOMER WEBSITE */}
+      <Route
+        path="/*"
+        element={<WebsiteLayout />}
+      />
+
     </Routes>
   );
 }
 
-
+/* =========================================================
+   MAIN APP
+========================================================= */
 export default function App() {
   return (
     <ToastProvider>

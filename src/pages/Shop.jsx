@@ -6,7 +6,12 @@ import { Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 
 import { productService } from '../services/productService';
 
-import { categories } from '../data/testimonials';
+import { categories as allCategories } from '../data/testimonials';
+
+// Hide the unused Other Products category from the shop filters.
+const categories = allCategories.filter((cat) =>
+  cat.id !== 'other' && cat.name?.trim().toLowerCase() !== 'other products'
+);
 
 import ProductGrid from '../components/ProductGrid';
 
@@ -15,7 +20,7 @@ import SectionHeader from '../components/SectionHeader';
 import Button from '../components/Button';
 
 const normalizeCategory = (category) =>
-  category === 'wood-pressed' ? 'wood-pressed-oils' : category;
+  category === 'wood-pressed' ? 'wood-pressed-oils' : category === 'other' ? 'all' : category;
 
 export default function Shop() {
 
@@ -46,10 +51,14 @@ export default function Shop() {
     setSelectedCategory(cat);
 
     setSearchQuery(q);
-    if (searchParams.get('category') === 'wood-pressed') {
+    if (searchParams.get('category') === 'wood-pressed' || searchParams.get('category') === 'other') {
       setSearchParams(prev => {
         const updated = new URLSearchParams(prev);
-        updated.set('category', 'wood-pressed-oils');
+        if (searchParams.get('category') === 'other') {
+          updated.delete('category');
+        } else {
+          updated.set('category', 'wood-pressed-oils');
+        }
         return updated;
       }, { replace: true });
     }
@@ -360,7 +369,7 @@ export default function Shop() {
 
             Showing <strong className="text-stone-800">{products.length}</strong> {products.length === 1 ? 'item' : 'items'}
 
-            {selectedCategory !== 'all' && ` in ${categories.find(c => normalizeCategory(c.id) === selectedCategory)?.name}`}
+            {selectedCategory !== 'all' && ` in ${categories.find(c => normalizeCategory(c.id) === selectedCategory)?.name || 'Selected Category'}`}
 
           </p>
 

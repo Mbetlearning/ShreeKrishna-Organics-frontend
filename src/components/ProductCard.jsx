@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Check, Zap } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { getReviewSummary } from '../services/reviewApi';
 import { apiRequest } from '../services/api';
 
@@ -28,6 +29,7 @@ function getActiveComboVariantIds() {
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState(null);
   const [isAdded, setIsAdded] = useState(false);
@@ -94,10 +96,21 @@ useEffect(() => {
   const isInActiveCombo = product.sizes?.some((size) =>
     size.variantId != null && comboVariantIds.has(String(size.variantId))
   ) ?? false;
+  const requireCustomerLogin = (action) => {
+    if (isAuthenticated) return true;
+    navigate('/login', {
+      state: {
+        from: `/product/${product.slug}`,
+        action,
+      },
+    });
+    return false;
+  };
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!canPurchase || adding) return;
+    if (!requireCustomerLogin('add-to-cart')) return;
     setAdding(true);
     try {
       const success = await addToCart(product, selectedSize, 1);
@@ -115,6 +128,7 @@ useEffect(() => {
     e.preventDefault();
     e.stopPropagation();
     if (!canPurchase || adding) return;
+    if (!requireCustomerLogin('buy-now')) return;
     setAdding(true);
     try {
       const success = await addToCart(product, selectedSize, 1);

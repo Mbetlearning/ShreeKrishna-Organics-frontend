@@ -520,6 +520,35 @@ export default function Orders() {
 
                       </p>
 
+                      {Number(order.taxAmount || 0) > 0 && (() => {
+                        // Split in integer paise so CGST + SGST equals the saved GST exactly.
+                        // This 2.5% + 2.5% display assumes an intra-state order at 5% GST.
+                        const taxPaise = Math.round(Number(order.taxAmount) * 100);
+                        const cgstPaise = Math.ceil(taxPaise / 2);
+                        const sgstPaise = taxPaise - cgstPaise;
+                        return (
+                          <>
+                            <p>
+                              <strong>CGST (2.5%):</strong>{' '}
+                              {money(cgstPaise / 100)}
+                            </p>
+                            <p>
+                              <strong>SGST (2.5%):</strong>{' '}
+                              {money(sgstPaise / 100)}
+                            </p>
+                            <p className="text-xs text-stone-500">
+                              GST breakdown is included in the product price where applicable.
+                            </p>
+                          </>
+                        );
+                      })()}
+                      {Number(order.codCharge || 0) > 0 && (
+                        <p>
+                          <strong>COD Charge:</strong>{' '}
+                          {money(order.codCharge)}
+                        </p>
+                      )}
+
                       <p>
 
                         <strong>Total:</strong>{' '}

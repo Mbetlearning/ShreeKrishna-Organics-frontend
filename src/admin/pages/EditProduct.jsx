@@ -27,6 +27,9 @@ const initialForm = {
   featured: false,
 
   displayOrder: "0",
+  hsnCode: "",
+  gstRate: "0",
+  priceIncludesGst: true,
 
 };
 
@@ -119,6 +122,9 @@ export default function EditProduct() {
           featured: product.featured ?? false,
 
           displayOrder: String(product.displayOrder ?? 0),
+          hsnCode: product.hsnCode ?? "",
+          gstRate: String(product.gstRate ?? 0),
+          priceIncludesGst: product.priceIncludesGst ?? true,
 
         });
 
@@ -239,6 +245,12 @@ export default function EditProduct() {
 
     }
 
+    const gstRate = Number(form.gstRate);
+    if (form.gstRate.trim() === "" || !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
+      setError("Enter a valid GST rate between 0 and 100.");
+      return;
+    }
+
     const payload = {
 
       categoryId: Number(form.categoryId),
@@ -254,6 +266,9 @@ export default function EditProduct() {
       // Keep stored product-level values; edit prices via variants.
       basePrice: originalPricing.basePrice,
       mrp: originalPricing.mrp,
+      hsnCode: form.hsnCode.trim(),
+      gstRate,
+      priceIncludesGst: form.priceIncludesGst,
 
       active: form.active,
 
@@ -485,6 +500,20 @@ export default function EditProduct() {
           />
 
         </div>
+
+        {/* PRODUCT GST SETTINGS */}
+        <section className="mt-6 rounded-2xl border border-[#E8E3D8] bg-[#FAF9F5] p-5">
+          <h2 className="font-bold text-[#243A34]">Product GST Settings</h2>
+          <p className="mt-1 text-xs text-gray-500">Choose the correct HSN and applicable GST rate for this product.</p>
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
+            <Field label="HSN Code" name="hsnCode" value={form.hsnCode} onChange={handleChange} maxLength={20} />
+            <Field label="GST Rate (%)" name="gstRate" type="number" min="0" max="100" step="0.01" value={form.gstRate} onChange={handleChange} required />
+          </div>
+          <label className="mt-4 flex items-center gap-2 text-sm text-[#243A34]">
+            <input type="checkbox" name="priceIncludesGst" checked={form.priceIncludesGst} onChange={handleChange} />
+            Variant selling prices include GST
+          </label>
+        </section>
 
         {/* SHORT DESCRIPTION */}
 

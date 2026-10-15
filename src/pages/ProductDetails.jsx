@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Zap, Check, ChevronRight } from 'lucide-react';
 import { productService } from '../services/productService';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -13,6 +14,7 @@ export default function ProductDetails() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedImage, setSelectedImage] = useState('');
@@ -68,8 +70,20 @@ export default function ProductDetails() {
     ? Math.round(((currentMrp - currentPrice) / currentMrp) * 100) : 0;
   const canPurchase = Boolean(selectedSize?.variantId && currentPrice != null);
 
+  const requireCustomerLogin = (action) => {
+    if (isAuthenticated) return true;
+    navigate('/login', {
+      state: {
+        from: `/product/${slug}`,
+        action,
+      },
+    });
+    return false;
+  };
+
   const handleAddToCart = () => {
     if (!canPurchase) return;
+    if (!requireCustomerLogin('add-to-cart')) return;
     // Existing CartContext is local/demo until Cart API integration.
     addToCart(product, selectedSize, quantity);
     setIsAdded(true);
@@ -77,6 +91,7 @@ export default function ProductDetails() {
   };
   const handleBuyNow = () => {
     if (!canPurchase) return;
+    if (!requireCustomerLogin('buy-now')) return;
     addToCart(product, selectedSize, quantity);
     navigate('/checkout');
   };
