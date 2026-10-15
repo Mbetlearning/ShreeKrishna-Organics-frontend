@@ -1,9 +1,10 @@
 import React, {
-  useEffect,
+  
   useState,
 } from "react";
 
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../services/api";
 
 import {
   LockKeyhole,
@@ -19,52 +20,55 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
+ 
 
-    const isAdmin =
-      localStorage.getItem("shreekrishna_admin");
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (isAdmin === "true") {
-      navigate(
-        "/admin/dashboard",
-        { replace: true }
-      );
-    }
+  setError("");
 
-  }, [navigate]);
+  try {
+    const response = await apiRequest("/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
 
-  const handleSubmit = (e) => {
-
-    e.preventDefault();
-
-    setError("");
-
-    /*
-      TEMPORARY ADMIN LOGIN
-
-      Spring Boot backend तयार झाल्यावर
-      हे API login मध्ये convert करू.
-    */
-
-    if (
-      email === "admin@shreekrishna.com" &&
-      password === "Admin@123"
-    ) {
-
-      localStorage.setItem(
-        "shreekrishna_admin",
-        "true"
-      );
-
-      navigate("/admin/dashboard");
-
+    if (response.role !== "ADMIN") {
+      setError("Admin access required.");
       return;
     }
 
-    setError(
-      "Invalid admin email or password."
+    localStorage.setItem(
+      "prakriti_auth_token",
+      response.accessToken
     );
-  };
+
+    localStorage.setItem(
+      "prakriti_auth_user",
+      JSON.stringify({
+        userId: response.userId,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        email: response.email,
+        role: response.role,
+      })
+    );
+
+    localStorage.setItem(
+      "shreekrishna_admin",
+      "true"
+    );
+
+    navigate("/admin/dashboard");
+  } catch (err) {
+    setError(
+      err.message || "Admin login failed."
+    );
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#F7F3E8] flex items-center justify-center p-5">
