@@ -288,7 +288,6 @@ export default function Navbar() {
                 >
                   shreekrishna
                 </span>
-
                 <span
                   className="
                     text-[8px]
@@ -1046,7 +1045,7 @@ export default function Navbar() {
                 "
               >
                 <span className="relative z-10">
-                   ShreeKrishna Organics 
+                   Shreekrishna Organics 
                 </span>
               </div>
 
@@ -1431,7 +1430,7 @@ export default function Navbar() {
                             }
                           >
                             <span className="text-lg">📝</span>
-                            ShreeKrishna Blogs
+                            Shreekrishna Blogs
                           </NavLink>
                         </div>
                       )}

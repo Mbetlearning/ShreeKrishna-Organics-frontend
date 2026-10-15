@@ -1,65 +1,153 @@
-/**
- * ============================================================================
- * CENTRAL API SERVICE (PRE-CONFIGURED FOR SPRING BOOT REST BACKEND)
- * ============================================================================
- * 
- * Future Spring Boot Backend Configuration:
- * -----------------------------------------
- * When your Java Spring Boot backend is ready, you can update BASE_URL:
- *   const BASE_URL = 'http://localhost:8080/api';
- * 
- * Typical Spring Boot Controller endpoints:
- *   - Auth:    POST /api/auth/login, POST /api/auth/register, GET /api/auth/me
- *   - Product: GET /api/products, GET /api/products/{id}, GET /api/products/slug/{slug}
- *   - Orders:  POST /api/orders, GET /api/orders/my-orders, GET /api/orders/{id}
- *   - Payment: POST /api/payment/create-order, POST /api/payment/verify
- * 
- * Token Authentication:
- *   The helper automatically includes JWT Bearer tokens from localStorage
- *   in the Authorization header if available.
- */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:8080/api/v1'
+).replace(/\/+$/, '');
 
-/**
- * Generic HTTP Request Wrapper
- * (Can easily be swapped with Axios or kept as lightweight native fetch)
- */
-export async function apiRequest(endpoint, options = {}) {
-  // Retrieve demo/stored JWT token from localStorage if user is logged in
-  const token = localStorage.getItem('prakriti_auth_token');
+export const AUTH_TOKEN_KEY = 'prakriti_auth_token';
+export const AUTH_USER_KEY = 'prakriti_auth_user';
+export const AUTH_CHANGED_EVENT = 'shreekrishna:auth-changed';
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
+export function clearAuthSession() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_USER_KEY);
 
-  const config = {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    }
-  };
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+}
+
+export function isTokenExpired(token) {
+  if (!token || token.startsWith('jwt_mock_token_')) {
+    return true;
+  }
 
   try {
-    // In demo mode without active backend, mock fallback is handled in services
-    const response = await fetch(`${BASE_URL}${endpoint}`, config);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+
+    const base64 = parts[1]
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const payload = JSON.parse(atob(base64));
+
+    if (typeof payload.exp !== 'number') {
+      return true;
     }
 
-    return await response.json();
-  } catch (error) {
-    // Log helpful debugging information for development
-    // console.warn(`[API] Fetch failed for ${endpoint}. Falling back to demo mock data.`, error.message);
-    throw error;
+    // Consider the token expired 30 seconds early.
+    return Date.now() >= (payload.exp * 1000 - 30000);
+  } catch {
+    return true;
   }
 }
 
-/**
- * Utility helper to simulate network latency for realistic demo UX
- */
-export const simulateLatency = (ms = 250) => new Promise(resolve => setTimeout(resolve, ms));
+export function getValidToken() {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+
+  if (!token) return null;
+
+  if (isTokenExpired(token)) {
+    clearAuthSession();
+    return null;
+  }
+
+  return token;
+}
+
+export async function apiRequest(endpoint, options = {}) {
+  const {
+    auth = true,
+    responseType = 'json',
+    headers: customHeaders = {},
+    ...fetchOptions
+  } = options;
+
+  const token = auth ? getValidToken() : null;
+
+  const headers = new Headers(customHeaders);
+
+  if (
+    fetchOptions.body != null &&
+    !(fetchOptions.body instanceof FormData) &&
+    !headers.has('Content-Type')
+  ) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const url = `${BASE_URL}/${endpoint.replace(/^\/+/, '')}`;
+
+  let response;
+
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+    });
+  } catch {
+    throw new Error(
+      'Cannot connect to the server. Please check your connection.'
+    );
+  }
+
+  // Only invalidate the current session when a protected
+  // request carrying the current token receives a 401.
+  // Invalid login credentials must not clear another session.
+  if (response.status === 401 && token) {
+    if (localStorage.getItem(AUTH_TOKEN_KEY) === token) {
+      clearAuthSession();
+    }
+  }
+
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+
+    try {
+      const errorData = await response.json();
+
+      message =
+        errorData.message ||
+        errorData.detail ||
+        errorData.error ||
+        message;
+
+      if (typeof message !== 'string') {
+        message = `Request failed (${response.status})`;
+      }
+    } catch {
+      // Keep the HTTP status message.
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
+  }
+
+  if (response.status === 204) return null;
+
+  if (responseType === 'blob') {
+    return response.blob();
+  }
+
+  if (responseType === 'text') {
+    return response.text();
+  }
+
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Server returned an invalid JSON response.');
+  }
+}
+
+// Retained for existing demo services.
+// Do not use for real authentication.
+export const simulateLatency = (ms = 250) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
