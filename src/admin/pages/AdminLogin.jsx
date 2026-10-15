@@ -37,7 +37,6 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-[#F7F3E8] flex items-center justify-center p-5">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-[#E8DFD3] overflow-hidden">
-
         <div className="bg-[#075e4d] px-8 py-9 text-center text-white">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-[#F3DF9B] text-[#075e4d] flex items-center justify-center mb-4">
             <ShieldCheck size={32} />
@@ -54,7 +53,10 @@ export default function AdminLogin() {
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
           <div>
-            <label className="text-xs font-semibold text-gray-600">
+            <label
+              htmlFor="admin-email"
+              className="text-xs font-semibold text-gray-600"
+            >
               Admin Email
             </label>
 
@@ -62,6 +64,7 @@ export default function AdminLogin() {
               <Mail size={18} className="text-gray-400" />
 
               <input
+                id="admin-email"
                 type="email"
                 required
                 autoComplete="username"
@@ -74,7 +77,10 @@ export default function AdminLogin() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-600">
+            <label
+              htmlFor="admin-password"
+              className="text-xs font-semibold text-gray-600"
+            >
               Password
             </label>
 
@@ -82,6 +88,7 @@ export default function AdminLogin() {
               <LockKeyhole size={18} className="text-gray-400" />
 
               <input
+                id="admin-password"
                 type="password"
                 required
                 autoComplete="current-password"
@@ -94,7 +101,10 @@ export default function AdminLogin() {
           </div>
 
           {error && (
-            <p role="alert" className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+            <p
+              role="alert"
+              className="text-sm text-red-600 bg-red-50 p-3 rounded-lg"
+            >
               {error}
             </p>
           )}
@@ -102,7 +112,8 @@ export default function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-className="w-full bg-[#075e4d] hover:bg-[#064c3f] disabled:opacity-60 text-white py-3.5 rounded-xl font-bold transition"          >
+            className="w-full bg-[#075e4d] hover:bg-[#064c3f] disabled:opacity-60 text-white py-3.5 rounded-xl font-bold transition"
+          >
             {loading ? "Signing In..." : "Sign In to Admin"}
           </button>
         </form>
