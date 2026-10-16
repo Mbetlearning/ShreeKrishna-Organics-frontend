@@ -44,6 +44,59 @@ const formatDate = (date) => {
 
 };
 
+
+// Show the tax breakdown only when it is provided by the backend.
+// Do not infer a GST rate or CGST/SGST split from the order total.
+function OrderBreakdown({ order }) {
+  const subtotal = Number(order.subtotal || 0);
+  const tax = Number(order.taxAmount || 0);
+  const hasTax = Number.isFinite(tax) && tax > 0 && tax <= subtotal;
+  const cgst = order.cgstAmount == null ? null : Number(order.cgstAmount);
+  const sgst = order.sgstAmount == null ? null : Number(order.sgstAmount);
+  const igst = order.igstAmount == null ? null : Number(order.igstAmount);
+  const hasCgstSgst = hasTax && cgst != null && sgst != null &&
+    Math.abs(cgst + sgst - tax) < 0.011;
+  const hasIgst = hasTax && igst != null && Math.abs(igst - tax) < 0.011;
+
+  const line = (label, amount, strong = false) => (
+    <div className={`flex items-start justify-between gap-4 ${strong ? 'font-bold text-[#2B241D]' : ''}`}>
+      <span>{label}</span>
+      <span className="whitespace-nowrap tabular-nums">{money(amount)}</span>
+    </div>
+  );
+
+  return (
+    <div className="text-sm text-stone-600 space-y-2">
+      <p><strong>Payment:</strong> {order.paymentMethod}</p>
+      <p><strong>Payment Status:</strong> {order.paymentStatus}</p>
+      <div className="border-t border-[#E8DFD3] pt-3 mt-3 space-y-2">
+        {hasTax && line('Product Price (Excluding GST)', subtotal - tax)}
+        {hasCgstSgst ? (
+          <>
+            {line('CGST — Included', cgst)}
+            {line('SGST — Included', sgst)}
+          </>
+        ) : hasIgst ? (
+          line('IGST — Included', igst)
+        ) : hasTax ? (
+          line('GST — Included (CGST 2.5% & SGST 2.5%)', tax)
+        ) : null}
+        {line(hasTax ? 'Product Price (Including GST)' : 'Product Subtotal', subtotal, true)}
+        {line('Delivery Charge', order.deliveryCharge)}
+        {Number(order.codCharge || 0) > 0 && line('COD Charge', order.codCharge)}
+        {hasTax ? (
+          <p className="text-xs text-emerald-700">GST is included in the product subtotal shown above.</p>
+        ) : (
+          <p className="text-xs text-amber-700">GST breakdown is unavailable for this order. The backend has not provided a recorded GST amount.</p>
+        )}
+        <div className="border-t border-[#E8DFD3] pt-3 mt-3">
+          {line('Total Payable', order.totalAmount, true)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Orders() {
 
   const location = useLocation();
@@ -486,78 +539,7 @@ export default function Orders() {
 
                     </div>
 
-                    <div className="text-sm text-stone-600 space-y-2">
-
-                      <p>
-
-                        <strong>Payment:</strong>{' '}
-
-                        {order.paymentMethod}
-
-                      </p>
-
-                      <p>
-
-                        <strong>Payment Status:</strong>{' '}
-
-                        {order.paymentStatus}
-
-                      </p>
-
-                      <p>
-
-                        <strong>Subtotal:</strong>{' '}
-
-                        {money(order.subtotal)}
-
-                      </p>
-
-                      <p>
-
-                        <strong>Delivery:</strong>{' '}
-
-                        {money(order.deliveryCharge)}
-
-                      </p>
-
-                      {Number(order.taxAmount || 0) > 0 && (() => {
-                        // Split in integer paise so CGST + SGST equals the saved GST exactly.
-                        // This 2.5% + 2.5% display assumes an intra-state order at 5% GST.
-                        const taxPaise = Math.round(Number(order.taxAmount) * 100);
-                        const cgstPaise = Math.ceil(taxPaise / 2);
-                        const sgstPaise = taxPaise - cgstPaise;
-                        return (
-                          <>
-                            <p>
-                              <strong>CGST (2.5%):</strong>{' '}
-                              {money(cgstPaise / 100)}
-                            </p>
-                            <p>
-                              <strong>SGST (2.5%):</strong>{' '}
-                              {money(sgstPaise / 100)}
-                            </p>
-                            <p className="text-xs text-stone-500">
-                              GST breakdown is included in the product price where applicable.
-                            </p>
-                          </>
-                        );
-                      })()}
-                      {Number(order.codCharge || 0) > 0 && (
-                        <p>
-                          <strong>COD Charge:</strong>{' '}
-                          {money(order.codCharge)}
-                        </p>
-                      )}
-
-                      <p>
-
-                        <strong>Total:</strong>{' '}
-
-                        {money(order.totalAmount)}
-
-                      </p>
-
-                    </div>
+                    <OrderBreakdown order={order} />
 
                   </div>
 
