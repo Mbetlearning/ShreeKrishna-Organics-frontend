@@ -886,6 +886,24 @@ export default function Navbar() {
 
               </div>
 
+              {/* CUSTOMER LOGIN / REGISTER — original account icon remains unchanged */}
+              {!isAuthenticated && (
+                <div className="hidden xl:flex items-center gap-2 shrink-0">
+                  <Link
+                    to="/login"
+                    className="whitespace-nowrap rounded-full border border-[#075e4d] px-3 py-2 text-[11px] font-semibold text-[#075e4d] hover:bg-[#edf5e8] transition"
+                  >
+                    Customer Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="whitespace-nowrap rounded-full bg-[#075e4d] px-3 py-2 text-[11px] font-semibold text-white hover:bg-[#064c3f] transition"
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
+
               {/* =================================================
                   CART
               ================================================= */}

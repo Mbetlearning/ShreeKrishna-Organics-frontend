@@ -327,9 +327,7 @@ const handleCancelOrder = async (orderId) => {
       </button>
     </div>
   )}
-  
-
-      <div>
+       <div>
         <p className="text-xs text-gray-500">
           Order Status
         </p>
@@ -372,7 +370,6 @@ const handleCancelOrder = async (orderId) => {
       Mark as Shipped
     </button>
   )}
-
   {selectedOrder.status === "SHIPPED" && (
     <button
       onClick={() =>
@@ -395,27 +392,20 @@ const handleCancelOrder = async (orderId) => {
     </button>
   </div>
 )}
-
 </div>
-
-
       <div>
         <p className="text-xs text-gray-500">
           Total Amount
         </p>
-
         <p className="font-semibold text-[#243A34] mt-1">
           ₹{Number(selectedOrder.totalAmount || 0).toFixed(2)}
         </p>
       </div>
-
     </div>
-
     <div className="mt-6">
       <p className="text-xs text-gray-500">
         Shipping Address
       </p>
-
       <p className="text-sm text-[#243A34] mt-2">
         {selectedOrder.shippingAddressLine1}
         {selectedOrder.shippingAddressLine2
@@ -430,14 +420,11 @@ const handleCancelOrder = async (orderId) => {
         , {selectedOrder.shippingCountry}
       </p>
     </div>
-
     <div className="mt-6">
       <h3 className="font-semibold text-[#243A34]">
         Items
       </h3>
-
       <div className="mt-3 space-y-3">
-
         {selectedOrder.items?.map((item) => (
           <div
             key={item.id}
@@ -466,10 +453,6 @@ const handleCancelOrder = async (orderId) => {
 
   </div>
 )}
-
-
-
-    </div>
+   </div>
   );
-  
 }

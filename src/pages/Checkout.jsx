@@ -1201,6 +1201,14 @@ const loadCheckout = async () => {
 
   const payableTotal = Number(summary?.totalAmount || 0) + codCharge;
 
+  // GST display is based on the server-provided tax amount.
+  // The backend remains authoritative for the final payable total.
+  const gstPaise = Math.round(Number(summary?.taxAmount || 0) * 100);
+  const subtotalPaise = Math.round(subtotal * 100);
+  const productPriceExcludingGst = (subtotalPaise - gstPaise) / 100;
+  const cgstPaise = Math.ceil(gstPaise / 2);
+  const sgstPaise = gstPaise - cgstPaise;
+
   const fieldClass =
 
     'w-full bg-[#FAF6EF] border border-[#E8DFD3] rounded-xl ' +
@@ -1949,65 +1957,55 @@ const loadCheckout = async () => {
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-[#E8DFD3] text-sm">
-
                   <div className="flex justify-between">
-
-                    <span>Subtotal</span>
-
+                    <span>Product Price (Excluding GST)</span>
+                    <span>{money(productPriceExcludingGst)}</span>
+                  </div>
+                  {gstPaise > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span>CGST (2.5%) — Included*</span>
+                        <span>{money(cgstPaise / 100)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>SGST (2.5%) — Included*</span>
+                        <span>{money(sgstPaise / 100)}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between font-semibold text-[#2B241D] pt-2 border-t border-[#E8DFD3]">
+                    <span>Product Price (Including GST)</span>
                     <span>{money(summary.subtotal)}</span>
-
                   </div>
-
                   <div className="flex justify-between">
-
-                    <span>Delivery</span>
-
-                    <span>
-
-                      {Number(summary.deliveryCharge) === 0
-
-                        ? 'FREE'
-
-                        : money(summary.deliveryCharge)}
-
-                    </span>
-
+                    <span>Delivery Charge</span>
+                    <span>{Number(summary.deliveryCharge) === 0 ? 'FREE' : money(summary.deliveryCharge)}</span>
                   </div>
-
-                  <div className="flex justify-between">
-
-                    <span>Discount</span>
-
-                    <span>
-
-                      -{money(summary.discountAmount)}
-
-                    </span>
-
-                  </div>
-
-                  <div className="flex justify-between">
-
-                    <span>Tax</span>
-
-                    <span>{money(summary.taxAmount)}</span>
-
-                  </div>
-
+                  {Number(summary.discountAmount || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span>Discount</span>
+                      <span>-{money(summary.discountAmount)}</span>
+                    </div>
+                  )}
                   {paymentMethod === 'COD' && (
-
-  <div className="flex justify-between"><span>COD charge (5%)</span><span>{money(codCharge)}</span></div>
-
-)}
-
-<div className="flex justify-between pt-4 border-t border-[#E8DFD3] font-bold text-[#2B241D] text-lg">
-
-                    <span>Total Amount</span>
-
+                    <div className="flex justify-between">
+                      <span>COD Charge (5%)</span>
+                      <span>{money(codCharge)}</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-green-700">
+                    GST is included in the product subtotal shown above.
+                  </p>
+                  {gstPaise > 0 && (
+                    <p className="text-xs text-stone-500">
+                      *CGST/SGST is an illustrative equal split of the tax reported by the server.
+                      Confirm the applicable tax rate and interstate/intrastate treatment with the backend before production use.
+                    </p>
+                  )}
+                  <div className="flex justify-between pt-4 border-t border-[#E8DFD3] font-bold text-[#2B241D] text-lg">
+                    <span>Total Payable</span>
                     <span>{money(payableTotal)}</span>
-
                   </div>
-
                 </div>
 
                 {hasUnavailableItems && (

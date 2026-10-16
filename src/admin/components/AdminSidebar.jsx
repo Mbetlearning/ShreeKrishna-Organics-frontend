@@ -12,8 +12,8 @@ import {
   LogOut,
   Store,
   FileText,
-  Images,
   Star,
+  MessageSquareQuote,
   Settings,
   Flame,
   PackagePlus,
@@ -26,17 +26,61 @@ export default function AdminSidebar() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const links = [
-    { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Products", path: "/admin/products", icon: Package },
-    { name: "Add Product", path: "/admin/products/add", icon: PlusCircle },
-    { name: "Hot Deals", path: "/admin/hot-deals", icon: Flame },
-    { name: "Combo Offers", path: "/admin/combo-offers", icon: PackagePlus },
-    { name: "Orders", path: "/admin/orders", icon: ShoppingBag },
-    { name: "Customers", path: "/admin/customers", icon: Users },
-    { name: "Blogs", path: "/admin/blogs", icon: FileText },
-    { name: "Media", path: "/admin/media", icon: Images },
-    { name: "Reviews", path: "/admin/reviews", icon: Star },
-    { name: "Settings", path: "/admin/settings", icon: Settings },
+    {
+      name: "Dashboard",
+      path: "/admin/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "Products",
+      path: "/admin/products",
+      icon: Package,
+    },
+    {
+      name: "Add Product",
+      path: "/admin/products/add",
+      icon: PlusCircle,
+    },
+    {
+      name: "Hot Deals",
+      path: "/admin/hot-deals",
+      icon: Flame,
+    },
+    {
+      name: "Combo Offers",
+      path: "/admin/combo-offers",
+      icon: PackagePlus,
+    },
+    {
+      name: "Orders",
+      path: "/admin/orders",
+      icon: ShoppingBag,
+    },
+    {
+      name: "Customers",
+      path: "/admin/customers",
+      icon: Users,
+    },
+    {
+      name: "Blogs",
+      path: "/admin/blogs",
+      icon: FileText,
+    },
+    {
+      name: "Reviews",
+      path: "/admin/reviews",
+      icon: Star,
+    },
+    {
+      name: "Website Testimonials",
+      path: "/admin/testimonials",
+      icon: MessageSquareQuote,
+    },
+    {
+      name: "Settings",
+      path: "/admin/settings",
+      icon: Settings,
+    },
   ];
 
   const handleLogout = async () => {
@@ -46,7 +90,10 @@ export default function AdminSidebar() {
 
     try {
       await logout();
-      navigate("/admin/login", { replace: true });
+
+      navigate("/admin/login", {
+        replace: true,
+      });
     } catch (error) {
       console.error("Admin logout failed:", error);
       setLoggingOut(false);
@@ -59,6 +106,7 @@ export default function AdminSidebar() {
       {/* BRAND */}
       <div className="px-6 py-7 border-b border-white/10">
         <div className="flex items-center gap-3">
+
           <div className="w-11 h-11 rounded-xl bg-[#F3DF9B] text-[#075e4d] flex items-center justify-center">
             <Store size={22} />
           </div>
@@ -67,15 +115,18 @@ export default function AdminSidebar() {
             <h1 className="font-serif font-bold text-lg">
               ShreeKrishna
             </h1>
+
             <p className="text-[10px] tracking-[0.2em] text-white/60">
               ADMIN PANEL
             </p>
           </div>
+
         </div>
       </div>
 
       {/* NAVIGATION */}
       <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+
         {links.map(({ name, path, icon: Icon }) => (
           <NavLink
             key={path}
@@ -88,14 +139,16 @@ export default function AdminSidebar() {
               }`
             }
           >
-            <Icon size={18} />
-            {name}
+            <Icon size={18} className="shrink-0" />
+            <span>{name}</span>
           </NavLink>
         ))}
+
       </nav>
 
       {/* LOGOUT */}
       <div className="p-4 border-t border-white/10">
+
         <button
           type="button"
           onClick={handleLogout}
@@ -103,8 +156,12 @@ export default function AdminSidebar() {
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-white/80 hover:bg-red-500/20 hover:text-white transition disabled:opacity-50"
         >
           <LogOut size={18} />
-          {loggingOut ? "Logging out..." : "Logout"}
+
+          {loggingOut
+            ? "Logging out..."
+            : "Logout"}
         </button>
+
       </div>
 
     </aside>

@@ -11,6 +11,7 @@ import {
   Star,
   CheckCircle2,
   Play,
+  X,
 } from "lucide-react";
 import { productService } from "../services/productService";
 import ProductCard from "../components/ProductCard";
@@ -83,17 +84,12 @@ const CATEGORIES = [
   {
     name: "Ghee",
     icon: "🐄",
-    link: "/shop?category=supplements",
+    link: "/shop?category=a2-ghee",
   },
   {
     name: "Jaggery",
     icon: "🟫",
     link: "/shop?category=jaggery",
-  },
-  {
-    name: "Combos",
-    icon: "🎁",
-    link: "/shop?category=other",
   },
   {
     name: "Wellness",
@@ -186,98 +182,7 @@ const QUALITY_ITEMS = [
     icon: "📋",
   },
 ];
-/* =========================================================
-   RAW MATERIAL — POSTERS & VIDEOS
-========================================================= */
-const RAW_MATERIAL_MEDIA = [
-  {
-    badge: "VIDEO TOUR",
-    duration: "2:45 min",
-    eyebrow: "ORGANIC FARM FIELD TOUR",
-    title: "Mustard Harvesting in Rajasthan",
-    description:
-      "Witness our farmer partners harvesting carefully selected mustard seeds and learn how quality begins at the farm.",
-    image:
-      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=900&q=85",
-  },
-  {
-    badge: "PROCESS VIDEO",
-    duration: "3:10 min",
-    eyebrow: "LOW RPM COLD EXTRACTION",
-    title: "Traditional Wood-Pressed Oil",
-    description:
-      "See how carefully sourced seeds are slowly pressed using traditional methods to preserve natural aroma and goodness.",
-    image:
-      "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=900&q=85",
-  },
-  {
-    badge: "ARTISAN STORY",
-    duration: "4:05 min",
-    eyebrow: "TRADITIONAL CRAFT",
-    title: "Natural Jaggery Making",
-    description:
-      "Step inside a traditional jaggery-making process where simple ingredients and time-tested methods come together.",
-    image:
-      "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?auto=format&fit=crop&w=900&q=85",
-  },
-  {
-    badge: "QUALITY CHECK",
-    duration: "1:55 min",
-    eyebrow: "PURITY & QUALITY",
-    title: "From Sourcing to Final Check",
-    description:
-      "Take a closer look at the care, cleanliness and quality checks followed before products reach your family.",
-    image:
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=85",
-  },
-];
-/* =========================================================
-   CUSTOMER REVIEWS
-========================================================= */
-const REVIEWS = [
-  {
-    name: "Dr Shagun Walia",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&h=200&q=85",
-    comment:
-      "This ghee is a healthy and delicious option for the whole family. We use it regularly and love its rich taste.",
-  },
-  {
-    name: "Pankaj Tiwari",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&h=200&q=85",
-    comment:
-      "The quality feels very natural and authentic. I really liked the taste, freshness and overall packaging.",
-  },
-  {
-    name: "Maitreyee",
-    image:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=85",
-    comment:
-      "Absolutely delicious and beautifully prepared. The texture and aroma are excellent and it tastes homemade.",
-  },
-  {
-    name: "Neelam Sharma",
-    image:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&h=200&q=85",
-    comment:
-      "I love the aroma, texture and taste. The product feels pure and has become a regular part of our kitchen.",
-  },
-  {
-    name: "Amit Patil",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=85",
-    comment:
-      "Very satisfied with the quality and packaging. The products have a fresh and authentic traditional taste.",
-  },
-  {
-    name: "Pooja Kulkarni",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&h=200&q=85",
-    comment:
-      "The products feel fresh, pure and carefully prepared. I would definitely recommend ShreeKrishna Organics.",
-  },
-];
+/* CUSTOMER REVIEWS — loaded from the website testimonials API */
 /* =========================================================
    HOME COMPONENT
 ========================================================= */
@@ -288,6 +193,12 @@ export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [reviews, setReviews] = useState([]);
+  const [websiteVideos, setWebsiteVideos] = useState([]);
+  const [playingVideoId, setPlayingVideoId] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewsError, setReviewsError] = useState(false);
+
   /* =======================================================
        PRODUCT SCROLL
     ======================================================= */
@@ -305,7 +216,10 @@ export default function Home() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const data = await productService.getFeaturedProducts();
+        const data = await productService.getAllProducts({
+  category: "all",
+  sortBy: "featured",
+});
         setFeaturedProducts(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error loading products:", error);
@@ -316,6 +230,84 @@ export default function Home() {
     }
     loadProducts();
   }, []);
+  /* =======================================================
+        LOAD WEBSITE TESTIMONIALS
+     ======================================================= */
+  useEffect(() => {
+    const controller = new AbortController();
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080")
+      .replace(/\/$/, "");
+
+    async function loadReviews() {
+      try {
+        const response = await fetch(`${apiBase}/api/v1/testimonials`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`Reviews API: ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Unexpected reviews response");
+        setReviews(
+          data
+            .filter((item) => item && item.active !== false)
+            .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+            .slice(0, 4)
+        );
+        setReviewsError(false);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        console.error("Error loading testimonials:", error);
+        setReviewsError(true);
+      } finally {
+        if (!controller.signal.aborted) setReviewsLoading(false);
+      }
+    }
+    loadReviews();
+    return () => controller.abort();
+  }, []);
+
+  /* =======================================================
+        LOAD PUBLIC YOUTUBE VIDEOS
+     ======================================================= */
+  useEffect(() => {
+    const controller = new AbortController();
+    const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1")
+      .replace(/\/+$/, "");
+
+    async function loadVideos() {
+      try {
+        const response = await fetch(`${apiBase}/videos`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`Videos API: ${response.status}`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Unexpected videos response");
+        setWebsiteVideos(
+          data.filter((video) => video && video.active !== false &&
+            /^[A-Za-z0-9_-]{11}$/.test(video.videoId || ""))
+        );
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Error loading website videos:", error);
+        }
+      }
+    }
+    loadVideos();
+    return () => controller.abort();
+  }, []);
+
+  const rawMaterialItems = [
+    ...websiteVideos.map((video) => ({
+      key: `video-${video.id}`,
+      badge: "Shreekrishna",
+      duration: "WATCH VIDEO",
+      eyebrow: "SHREEKRISHNA ORGANICS",
+      title: video.title,
+      description: video.description || "Watch our video to learn more.",
+      image: video.thumbnailUrl || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`,
+      videoId: video.videoId,
+    })),
+  ];
+
   /* =======================================================
        HERO AUTO SLIDE
     ======================================================= */
@@ -471,6 +463,7 @@ export default function Home() {
        RAW MATERIAL AUTO SLIDE - LEFT / FORWARD ONLY
     ======================================================= */
   useEffect(() => {
+    if (playingVideoId) return;
     const timer = setInterval(() => {
       const container = rawMaterialScrollRef.current;
       if (!container) return;
@@ -494,7 +487,7 @@ export default function Home() {
       });
     }, 2500);
     return () => clearInterval(timer);
-  }, []);
+  }, [playingVideoId]);
   const scrollQuality = (direction) => {
     const container = qualityScrollRef.current;
     if (!container) return;
@@ -712,18 +705,18 @@ export default function Home() {
           ) : (
             <>
               <div
-                ref={productScrollRef}
-                className="flex gap-4 overflow-x-auto scroll-smooth px-5 lg:px-12 pb-5"
-              >
-                {featuredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="min-w-[270px] sm:min-w-[285px] lg:min-w-[300px]"
-                  >
-                    <ProductCard product={product} />
-                  </div>
-                ))}
-              </div>
+  ref={productScrollRef}
+  className="flex gap-5 overflow-x-auto scroll-smooth px-4 sm:px-6 lg:px-12 pb-6"
+>
+  {featuredProducts.map((product) => (
+    <div
+      key={product.id}
+      className="flex-none w-[240px] sm:w-[260px] lg:w-[280px]"
+    >
+      <ProductCard product={product} />
+    </div>
+  ))}
+</div>
               {/* PRODUCT LEFT */}
               <button
                 type="button"
@@ -940,29 +933,32 @@ export default function Home() {
             </p>
           </div>
           <div className="relative mt-12">
-            <button
+            {rawMaterialItems.length > 0 && <button
               type="button"
               onClick={() => scrollRawMaterial("left")}
               aria-label="Previous raw material card"
               className="absolute left-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
             >
               <ChevronLeft size={22} />
-            </button>
-            <button
+            </button>}
+            {rawMaterialItems.length > 0 && <button
               type="button"
               onClick={() => scrollRawMaterial("right")}
               aria-label="Next raw material card"
               className="absolute right-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
             >
               <ChevronRight size={22} />
-            </button>
+            </button>}
             <div
               ref={rawMaterialScrollRef}
               className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {RAW_MATERIAL_MEDIA.map((item, index) => (
+              {rawMaterialItems.length === 0 && (
+                <p className="w-full py-14 text-center text-[#766453]">Videos will be available soon.</p>
+              )}
+              {rawMaterialItems.map((item) => (
                 <article
-                  key={index}
+                  key={item.key}
                   className="group flex-none w-[85%] sm:w-[47%] lg:w-[31%] snap-start overflow-hidden rounded-[22px] border border-[#e6dccd] bg-white shadow-[0_8px_24px_rgba(74,54,35,0.08)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_16px_35px_rgba(74,54,35,0.14)]"
                 >
                   <div className="relative h-[215px] overflow-hidden bg-[#ece5d9]">
@@ -981,7 +977,9 @@ export default function Home() {
                     </span>
                     <button
                       type="button"
-                      aria-label={`Play ${item.title}`}
+                      aria-label={item.videoId ? `Play ${item.title}` : `Preview unavailable for ${item.title}`}
+                      onClick={() => item.videoId && setPlayingVideoId(item.videoId)}
+                      disabled={!item.videoId}
                       className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#c95738] text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[#b8492e]"
                     >
                       <Play size={22} fill="currentColor" className="ml-1" />
@@ -999,9 +997,11 @@ export default function Home() {
                     </p>
                     <button
                       type="button"
+                      onClick={() => item.videoId && setPlayingVideoId(item.videoId)}
+                      disabled={!item.videoId}
                       className="mt-5 inline-flex items-center gap-2 text-[12px] font-bold text-[#211c17] transition-colors hover:text-[#c95738]"
                     >
-                      Watch Preview{" "}
+                      {item.videoId ? "Watch Video" : "Preview Coming Soon"}{" "}
                       <span className="text-base leading-none transition-transform group-hover:translate-x-1">
                         →
                       </span>
@@ -1022,13 +1022,22 @@ export default function Home() {
           <h2 className="text-center font-serif text-3xl lg:text-4xl font-bold text-[#173b4d] mb-10">
             What Do Our Customers Say
           </h2>
+          {reviewsLoading && (
+            <p className="text-center text-gray-500 mb-5">Loading customer reviews...</p>
+          )}
+          {!reviewsLoading && reviewsError && (
+            <p className="text-center text-gray-500 mb-5">Customer reviews are temporarily unavailable.</p>
+          )}
+          {!reviewsLoading && !reviewsError && reviews.length === 0 && (
+            <p className="text-center text-gray-500 mb-5">Customer reviews will be available soon.</p>
+          )}
           <div
             ref={reviewScrollRef}
             className="flex gap-5 overflow-x-auto scroll-smooth pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {REVIEWS.map((review, index) => (
+            {reviews.map((review, index) => (
               <div
-                key={index}
+                key={review.id ?? index}
                 className="min-w-[290px] sm:min-w-[330px] lg:min-w-[350px] min-h-[205px] bg-white border border-[#dfe7e3] rounded-2xl px-6 py-6 shadow-[0_4px_15px_rgba(0,0,0,0.05)] flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(0,0,0,0.08)]"
               >
                 <p className="text-[12px] sm:text-[13px] text-gray-600 leading-relaxed">
@@ -1037,26 +1046,26 @@ export default function Home() {
                 <div className="flex items-center gap-4 mt-7">
                   <div className="w-[58px] h-[58px] rounded-full overflow-hidden shrink-0 border-2 border-[#d9e5df] bg-[#edf5e8] shadow-sm">
                     <img
-                      src={review.image}
-                      alt={review.name}
+                      src={review.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.customerName || "Customer")}&size=200&background=edf5e8&color=075e4d&bold=true`}
+                      alt={review.customerName || "Customer"}
                       loading="lazy"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.name)}&size=200&background=edf5e8&color=075e4d&bold=true`;
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.customerName || "Customer")}&size=200&background=edf5e8&color=075e4d&bold=true`;
                       }}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div>
                     <h3 className="font-serif font-bold text-[14px] text-[#173b4d]">
-                      {review.name}
+                      {review.customerName}
                     </h3>
                     <div className="flex gap-[3px] mt-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
                           size={13}
-                          className="fill-[#f4aa00] text-[#f4aa00]"
+                          className={star <= Math.max(0, Math.min(5, Number(review.rating) || 0)) ? "fill-[#f4aa00] text-[#f4aa00]" : "fill-none text-gray-300"}
                         />
                       ))}
                     </div>
@@ -1065,7 +1074,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <div className="flex justify-center items-center gap-4 mt-2">
+          {reviews.length > 0 && <div className="flex justify-center items-center gap-4 mt-2">
             <button
               type="button"
               onClick={() => scrollReviews("left")}
@@ -1075,7 +1084,7 @@ export default function Home() {
               <ChevronLeft size={17} />
             </button>
             <div className="flex items-center gap-[6px]">
-              {REVIEWS.map((_, index) => (
+              {reviews.map((_, index) => (
                 <span
                   key={index}
                   className={`w-2 h-2 rounded-full ${index === 2 ? "bg-[#287b6c]" : "bg-gray-300"}`}
@@ -1090,9 +1099,40 @@ export default function Home() {
             >
               <ChevronRight size={17} />
             </button>
-          </div>
+          </div>}
         </div>
       </section>
+      {playingVideoId && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPlayingVideoId(null);
+          }}
+        >
+          <div role="dialog" aria-modal="true" aria-label="YouTube video player" className="relative w-full max-w-4xl">
+            <button
+              type="button"
+              onClick={() => setPlayingVideoId(null)}
+              aria-label="Close video"
+              className="absolute -top-12 right-0 rounded-full bg-white p-2 text-gray-900"
+            >
+              <X size={22} />
+            </button>
+            <div className="aspect-video overflow-hidden rounded-xl bg-black">
+              <iframe
+                key={playingVideoId}
+                src={`https://www.youtube-nocookie.com/embed/${playingVideoId}?autoplay=1&rel=0`}
+                title="ShreeKrishna Organics YouTube Video"
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -1,8 +1,10 @@
+
 export const categories = [
   { id: "all", name: "All Products", count: 10 },
-  { id: "wood-pressed", name: "Oils", count: 5 },
+  { id: "wood-pressed-oils", name: "Oils", count: 5 },
+  { id: "a2-ghee", name: "A2 Ghee", count: 0 },
   { id: "jaggery", name: "Jaggery", count: 2 },
-  { id: "supplements", name: "Health Supplements", count: 2 },
+  { id: "health-supplements", name: "Health Supplements", count: 2 },
   { id: "other", name: "Other Products", count: 2 }
 ];
 
@@ -23,7 +25,7 @@ export const testimonials = [
     role: "Home Chef & Food Blogger, Bengaluru",
     rating: 5,
     comment: "ShreeKrishna Organics Black Sesame Gingelly oil with idli podi is an absolute match made in heaven. The subtle palm jaggery undertone rounds off the flavor perfectly. Highly recommended for daily cooking!",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2df2?auto=format&fit=crop&w=200&q=80",
     verified: true,
     product: "Wood-Pressed Black Sesame Oil"
   },

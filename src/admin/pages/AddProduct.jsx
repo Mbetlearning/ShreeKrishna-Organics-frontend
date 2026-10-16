@@ -22,6 +22,9 @@ const initialForm = {
   shortDescription: "",
 
   description: "",
+  hsnCode: "",
+  gstRate: "0",
+  priceIncludesGst: true,
 
 
 
@@ -227,6 +230,16 @@ export default function AddProduct() {
 
     }
 
+    const gstRate = Number(form.gstRate);
+    if (form.gstRate.trim() === "" || !Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
+      setError("GST rate must be between 0 and 100.");
+      return;
+    }
+    if (form.hsnCode.trim().length > 20) {
+      setError("HSN code must not exceed 20 characters.");
+      return;
+    }
+
     const payload = {
 
       categoryId: Number(form.categoryId),
@@ -242,6 +255,9 @@ export default function AddProduct() {
       // Product-level placeholder; actual selling prices are variant-wise.
       basePrice: 0,
       mrp: null,
+      hsnCode: form.hsnCode.trim() || null,
+      gstRate,
+      priceIncludesGst: form.priceIncludesGst,
 
       active: form.active,
 
@@ -556,6 +572,44 @@ export default function AddProduct() {
           </div>
 
 
+
+          {/* Product GST settings - selling price remains variant-wise. */}
+          <section className="mt-6 rounded-2xl border border-[#E8E3D8] bg-[#FAF9F6] p-5">
+            <h2 className="font-bold text-[#243A34]">Product GST Settings</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Set the applicable HSN and GST rate. Product selling prices are managed in variants.
+            </p>
+            <div className="mt-4 grid gap-5 md:grid-cols-2">
+              <Field
+                label="HSN Code"
+                name="hsnCode"
+                value={form.hsnCode}
+                onChange={update}
+                maxLength={20}
+                placeholder="Enter applicable HSN code"
+              />
+              <Field
+                label="GST Rate (%)"
+                name="gstRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={form.gstRate}
+                onChange={update}
+                required
+              />
+            </div>
+            <label className="mt-4 flex items-center gap-2 text-sm text-[#243A34]">
+              <input
+                type="checkbox"
+                name="priceIncludesGst"
+                checked={form.priceIncludesGst}
+                onChange={update}
+              />
+              Variant selling prices include GST
+            </label>
+          </section>
 
           <div className="flex flex-wrap gap-6 mt-5">
 
