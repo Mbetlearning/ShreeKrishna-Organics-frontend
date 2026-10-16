@@ -3,22 +3,19 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import {
-
   ArrowLeft,
-
   Package,
-
   MapPin,
-
   RefreshCw,
-
   XCircle,
-
+  Download,
 } from 'lucide-react';
 
 import { customerOrderApi } from '../services/customerOrderApi';
 
 import { useToast } from '../context/ToastContext';
+
+
 
 const money = (value) =>
 
@@ -45,6 +42,8 @@ const formatDate = (date) => {
 };
 
 export default function Orders() {
+const [downloadingInvoiceId, setDownloadingInvoiceId] =
+  useState(null);
 
   const location = useLocation();
 
@@ -148,6 +147,61 @@ export default function Orders() {
       setCheckingId(null);
     }
   };
+
+const handleDownloadInvoice = async (order) => {
+  if (
+    downloadingInvoiceId != null ||
+    checkingId != null ||
+    cancellingId != null
+  ) {
+    return;
+  }
+
+  setDownloadingInvoiceId(order.id);
+
+  try {
+    const blob =
+      await customerOrderApi.downloadInvoice(order.id);
+
+    if (!blob || blob.size === 0) {
+      throw new Error('Invoice PDF is empty.');
+    }
+
+    const url = window.URL.createObjectURL(blob);
+
+    const safeOrderNumber = String(
+      order.orderNumber || order.id
+    ).replace(/[^a-zA-Z0-9-_]/g, '_');
+
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download =
+      `ShreeKrishna-Invoice-${safeOrderNumber}.pdf`;
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    window.setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 1000);
+
+    addToast(
+      'Invoice downloaded successfully.',
+      'success'
+    );
+  } catch (err) {
+    addToast(
+      err.message || 'Unable to download invoice.',
+      'error'
+    );
+  } finally {
+    setDownloadingInvoiceId(null);
+  }
+};
 
   const handleCancel = async (order) => {
     if (checkingId != null || cancellingId != null) return;
@@ -520,28 +574,76 @@ export default function Orders() {
 
                       </p>
 
-                      {Number(order.taxAmount || 0) > 0 && (() => {
-                        // Split in integer paise so CGST + SGST equals the saved GST exactly.
-                        // This 2.5% + 2.5% display assumes an intra-state order at 5% GST.
-                        const taxPaise = Math.round(Number(order.taxAmount) * 100);
-                        const cgstPaise = Math.ceil(taxPaise / 2);
-                        const sgstPaise = taxPaise - cgstPaise;
-                        return (
-                          <>
-                            <p>
-                              <strong>CGST (2.5%):</strong>{' '}
-                              {money(cgstPaise / 100)}
-                            </p>
-                            <p>
-                              <strong>SGST (2.5%):</strong>{' '}
-                              {money(sgstPaise / 100)}
-                            </p>
-                            <p className="text-xs text-stone-500">
-                              GST breakdown is included in the product price where applicable.
-                            </p>
-                          </>
-                        );
-                      })()}
+                     {Number(order.taxAmount || 0) > 0 && (
+  <>
+    <p>
+      <strong>
+        Product Price (Excluding GST):
+      </strong>{' '}
+      {money(
+        order.taxableAmount ??
+          Number(order.subtotal || 0) -
+            Number(order.taxAmount || 0)
+      )}
+    </p>
+
+    {Number(order.cgstAmount || 0) > 0 && (
+      <p>
+        <strong>
+          CGST
+          {Number(order.effectiveGstRate || 0) > 0
+            ? ` (${(
+                Number(order.effectiveGstRate) / 2
+              ).toFixed(2)}%)`
+            : ''}
+          :
+        </strong>{' '}
+        {money(order.cgstAmount)}
+      </p>
+    )}
+
+    {Number(order.sgstAmount || 0) > 0 && (
+      <p>
+        <strong>
+          SGST
+          {Number(order.effectiveGstRate || 0) > 0
+            ? ` (${(
+                Number(order.effectiveGstRate) / 2
+              ).toFixed(2)}%)`
+            : ''}
+          :
+        </strong>{' '}
+        {money(order.sgstAmount)}
+      </p>
+    )}
+
+    {Number(order.igstAmount || 0) > 0 && (
+      <p>
+        <strong>
+          IGST
+          {Number(order.effectiveGstRate || 0) > 0
+            ? ` (${Number(
+                order.effectiveGstRate
+              ).toFixed(2)}%)`
+            : ''}
+          :
+        </strong>{' '}
+        {money(order.igstAmount)}
+      </p>
+    )}
+
+    <p>
+      <strong>
+        Product Price (Including GST):
+      </strong>{' '}
+      {money(order.subtotal)}
+    </p>
+
+    <p className="text-xs text-green-700">
+      GST is included in the product price.
+    </p>
+  </>
+)}
                       {Number(order.codCharge || 0) > 0 && (
                         <p>
                           <strong>COD Charge:</strong>{' '}
@@ -560,6 +662,42 @@ export default function Orders() {
                     </div>
 
                   </div>
+
+
+<div className="mt-6 pt-4 border-t border-[#E8DFD3]">
+  <button
+    type="button"
+    onClick={() => handleDownloadInvoice(order)}
+    disabled={
+      downloadingInvoiceId != null ||
+      checkingId != null ||
+      cancellingId != null
+    }
+    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#075e4d] text-white text-sm font-bold hover:bg-[#064c3f] disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <Download size={16} />
+
+    {downloadingInvoiceId === order.id
+      ? 'Downloading Invoice...'
+      : 'Download Invoice PDF'}
+  </button>
+
+  {order.paymentMethod === 'COD' &&
+    order.paymentStatus !== 'PAID' && (
+      <p className="text-xs text-stone-500 mt-2">
+        This invoice records the order amount.
+        Cash on Delivery payment is still due.
+      </p>
+    )}
+
+  {order.paymentMethod === 'RAZORPAY' &&
+    order.paymentStatus === 'PAID' && (
+      <p className="text-xs text-green-700 mt-2">
+        Online payment has been received and
+        recorded for this order.
+      </p>
+    )}
+</div>
 
                   {isPendingOnlinePayment(order) && (
                     <div className="mt-6 pt-4 border-t border-amber-200 space-y-3">
