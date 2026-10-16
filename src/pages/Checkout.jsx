@@ -1202,12 +1202,26 @@ const loadCheckout = async () => {
   const payableTotal = Number(summary?.totalAmount || 0) + codCharge;
 
   // GST display is based on the server-provided tax amount.
-  // The backend remains authoritative for the final payable total.
+  // The backend remains authoritative for the actual tax amount and final payable total.
+  // Product prices are GST-inclusive, so the taxable value is subtotal - recorded GST.
   const gstPaise = Math.round(Number(summary?.taxAmount || 0) * 100);
   const subtotalPaise = Math.round(subtotal * 100);
-  const productPriceExcludingGst = (subtotalPaise - gstPaise) / 100;
+  const productPriceExcludingGst = Math.max(0, (subtotalPaise - gstPaise) / 100);
+
+  // Split the recorded GST amount in integer paise so CGST + SGST always equals
+  // the server-provided GST amount exactly, even when there is a 1-paise rounding difference.
   const cgstPaise = Math.ceil(gstPaise / 2);
   const sgstPaise = gstPaise - cgstPaise;
+
+  // Derive the effective TOTAL GST rate from the actual tax recorded by the backend.
+  // Example: total GST 2.5% => CGST 1.25% + SGST 1.25%.
+  const effectiveGstRate =
+    gstPaise > 0 && productPriceExcludingGst > 0
+      ? (Number(summary?.taxAmount || 0) / productPriceExcludingGst) * 100
+      : 0;
+
+  const cgstRate = effectiveGstRate / 2;
+  const sgstRate = effectiveGstRate / 2;
 
   const fieldClass =
 
@@ -1961,47 +1975,55 @@ const loadCheckout = async () => {
                     <span>Product Price (Excluding GST)</span>
                     <span>{money(productPriceExcludingGst)}</span>
                   </div>
+
                   {gstPaise > 0 && (
                     <>
                       <div className="flex justify-between">
-                        <span>CGST (2.5%) — Included*</span>
+                        <span>CGST ({cgstRate.toFixed(2)}%) — Included</span>
                         <span>{money(cgstPaise / 100)}</span>
                       </div>
+
                       <div className="flex justify-between">
-                        <span>SGST (2.5%) — Included*</span>
+                        <span>SGST ({sgstRate.toFixed(2)}%) — Included</span>
                         <span>{money(sgstPaise / 100)}</span>
                       </div>
                     </>
                   )}
+
                   <div className="flex justify-between font-semibold text-[#2B241D] pt-2 border-t border-[#E8DFD3]">
                     <span>Product Price (Including GST)</span>
                     <span>{money(summary.subtotal)}</span>
                   </div>
+
                   <div className="flex justify-between">
                     <span>Delivery Charge</span>
                     <span>{Number(summary.deliveryCharge) === 0 ? 'FREE' : money(summary.deliveryCharge)}</span>
                   </div>
+
                   {Number(summary.discountAmount || 0) > 0 && (
                     <div className="flex justify-between">
                       <span>Discount</span>
                       <span>-{money(summary.discountAmount)}</span>
                     </div>
                   )}
+
                   {paymentMethod === 'COD' && (
                     <div className="flex justify-between">
                       <span>COD Charge (5%)</span>
                       <span>{money(codCharge)}</span>
                     </div>
                   )}
+
                   <p className="text-xs text-green-700">
-                    GST is included in the product subtotal shown above.
+                    GST is included in the product price.
                   </p>
+
                   {gstPaise > 0 && (
                     <p className="text-xs text-stone-500">
-                      *CGST/SGST is an illustrative equal split of the tax reported by the server.
-                      Confirm the applicable tax rate and interstate/intrastate treatment with the backend before production use.
+                      CGST and SGST are shown as an equal split of the GST recorded by the server.
                     </p>
                   )}
+
                   <div className="flex justify-between pt-4 border-t border-[#E8DFD3] font-bold text-[#2B241D] text-lg">
                     <span>Total Payable</span>
                     <span>{money(payableTotal)}</span>
