@@ -1,12 +1,14 @@
 
 const BASE_URL = (
   import.meta.env.VITE_API_URL ||
-  'http://localhost:8080/api/v1'
-).replace(/\/+$/, '');
+  "http://localhost:8080/api/v1"
+)
+  .replace(/\/+$/, "")
+  .replace(/(?:\/v1)+$/, "/v1");
 
-export const AUTH_TOKEN_KEY = 'prakriti_auth_token';
-export const AUTH_USER_KEY = 'prakriti_auth_user';
-export const AUTH_CHANGED_EVENT = 'shreekrishna:auth-changed';
+export const AUTH_TOKEN_KEY = "prakriti_auth_token";
+export const AUTH_USER_KEY = "prakriti_auth_user";
+export const AUTH_CHANGED_EVENT = "shreekrishna:auth-changed";
 
 export function clearAuthSession() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
@@ -16,26 +18,29 @@ export function clearAuthSession() {
 }
 
 export function isTokenExpired(token) {
-  if (!token || token.startsWith('jwt_mock_token_')) {
+  if (!token || token.startsWith("jwt_mock_token_")) {
     return true;
   }
 
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return true;
+    const parts = token.split(".");
+
+    if (parts.length !== 3) {
+      return true;
+    }
 
     const base64 = parts[1]
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
 
     const payload = JSON.parse(atob(base64));
 
-    if (typeof payload.exp !== 'number') {
+    if (typeof payload.exp !== "number") {
       return true;
     }
 
     // Consider the token expired 30 seconds early.
-    return Date.now() >= (payload.exp * 1000 - 30000);
+    return Date.now() >= payload.exp * 1000 - 30000;
   } catch {
     return true;
   }
@@ -44,7 +49,9 @@ export function isTokenExpired(token) {
 export function getValidToken() {
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
 
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
   if (isTokenExpired(token)) {
     clearAuthSession();
@@ -57,7 +64,7 @@ export function getValidToken() {
 export async function apiRequest(endpoint, options = {}) {
   const {
     auth = true,
-    responseType = 'json',
+    responseType = "json",
     headers: customHeaders = {},
     ...fetchOptions
   } = options;
@@ -69,16 +76,23 @@ export async function apiRequest(endpoint, options = {}) {
   if (
     fetchOptions.body != null &&
     !(fetchOptions.body instanceof FormData) &&
-    !headers.has('Content-Type')
+    !headers.has("Content-Type")
   ) {
-    headers.set('Content-Type', 'application/json');
+    headers.set("Content-Type", "application/json");
   }
 
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const url = `${BASE_URL}/${endpoint.replace(/^\/+/, '')}`;
+  // Remove duplicate API version from endpoint if present.
+  const cleanEndpoint = String(endpoint)
+    .replace(/^\/+/, "")
+    .replace(/^(?:api\/)?v1\//, "");
+
+  const url = `${BASE_URL}/${cleanEndpoint}`;
+
+  
 
   let response;
 
@@ -89,13 +103,11 @@ export async function apiRequest(endpoint, options = {}) {
     });
   } catch {
     throw new Error(
-      'Cannot connect to the server. Please check your connection.'
+      "Cannot connect to the server. Please check your connection."
     );
   }
 
-  // Only invalidate the current session when a protected
-  // request carrying the current token receives a 401.
-  // Invalid login credentials must not clear another session.
+  // Clear the current session only if its token receives 401.
   if (response.status === 401 && token) {
     if (localStorage.getItem(AUTH_TOKEN_KEY) === token) {
       clearAuthSession();
@@ -114,7 +126,7 @@ export async function apiRequest(endpoint, options = {}) {
         errorData.error ||
         message;
 
-      if (typeof message !== 'string') {
+      if (typeof message !== "string") {
         message = `Request failed (${response.status})`;
       }
     } catch {
@@ -123,27 +135,32 @@ export async function apiRequest(endpoint, options = {}) {
 
     const error = new Error(message);
     error.status = response.status;
+
     throw error;
   }
 
-  if (response.status === 204) return null;
+  if (response.status === 204) {
+    return null;
+  }
 
-  if (responseType === 'blob') {
+  if (responseType === "blob") {
     return response.blob();
   }
 
-  if (responseType === 'text') {
+  if (responseType === "text") {
     return response.text();
   }
 
   const text = await response.text();
 
-  if (!text) return null;
+  if (!text) {
+    return null;
+  }
 
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error('Server returned an invalid JSON response.');
+    throw new Error("Server returned an invalid JSON response.");
   }
 }
 
