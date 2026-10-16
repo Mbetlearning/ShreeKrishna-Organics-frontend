@@ -16,7 +16,7 @@ const [detailsLoading, setDetailsLoading] = useState(false);
         setError("");
 
         const data = await apiRequest(
-          "/v1/admin/orders?page=0&size=20"
+          "/admin/orders?page=0&size=20"
         );
 
         setOrders(data.content || []);
@@ -37,7 +37,7 @@ const [detailsLoading, setDetailsLoading] = useState(false);
     setError("");
 
     const data = await apiRequest(
-      `/v1/admin/orders/${orderId}`
+      `/admin/orders/${orderId}`
     );
 
     setSelectedOrder(data);
@@ -54,7 +54,7 @@ const handleStatusUpdate = async (orderId, newStatus) => {
     setError("");
 
     const updatedOrder = await apiRequest(
-      `/v1/admin/orders/${orderId}/status`,
+      `/admin/orders/${orderId}/status`,
       {
         method: "PATCH",
         body: JSON.stringify({
@@ -83,7 +83,7 @@ const handleCodPayment = async (orderId) => {
     setError("");
 
     const updatedOrder = await apiRequest(
-      `/v1/admin/orders/${orderId}/cod-payment`,
+      `/admin/orders/${orderId}/cod-payment`,
       {
         method: "PATCH",
       }
@@ -109,7 +109,7 @@ const handleCancelOrder = async (orderId) => {
     setError("");
 
     const updatedOrder = await apiRequest(
-      `/v1/admin/orders/${orderId}/cancel`,
+      `/admin/orders/${orderId}/cancel`,
       {
         method: "POST",
       }
