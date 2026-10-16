@@ -1,18 +1,17 @@
-
 import { apiRequest } from './api';
 
 export const customerOrderApi = {
   getCheckoutSummary: () =>
     apiRequest('/checkout/summary'),
 
- placeOrder: (addressId, paymentMethod) =>
-  apiRequest('/orders', {
-    method: 'POST',
-    body: JSON.stringify({
-      addressId: Number(addressId),
-      paymentMethod,
+  placeOrder: (addressId, paymentMethod) =>
+    apiRequest('/orders', {
+      method: 'POST',
+      body: JSON.stringify({
+        addressId: Number(addressId),
+        paymentMethod,
+      }),
     }),
-  }),
 
   getOrders: () =>
     apiRequest('/orders'),
@@ -23,5 +22,10 @@ export const customerOrderApi = {
   cancelOrder: (id) =>
     apiRequest(`/orders/${id}/cancel`, {
       method: 'POST',
+    }),
+
+  downloadInvoice: (id) =>
+    apiRequest(`/orders/${id}/invoice`, {
+      responseType: 'blob',
     }),
 };
