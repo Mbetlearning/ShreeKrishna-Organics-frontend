@@ -12,11 +12,12 @@ import {
   CheckCircle2,
   Play,
   X,
+  Phone,
+  MessageCircle,
 } from "lucide-react";
 import { productService } from "../services/productService";
 import ProductCard from "../components/ProductCard";
 import LoadingSpinner from "../components/LoadingSpinner";
-import BulkOrdersBanner from "../components/BulkOrdersBanner";
 /* =========================================================
    HERO SLIDES
 ========================================================= */
@@ -97,6 +98,33 @@ const CATEGORIES = [
     link: "/shop",
   },
 ];
+/* =========================================================
+   HOME CATEGORY PRODUCT ROWS
+========================================================= */
+const HOME_PRODUCT_SECTIONS = [
+  { key: "oils", title: "Wood-Pressed Oils", subtitle: "Traditionally pressed, naturally pure", link: "/wood-pressed-oils" },
+  { key: "ghee", title: "A2 Cow Ghee", subtitle: "Rich aroma and traditional goodness", link: "/a2-ghee" },
+  { key: "jaggery", title: "Natural Jaggery", subtitle: "A naturally sweet tradition", link: "/jaggery" },
+  { key: "supplements", title: "Health Supplements", subtitle: "Everyday wellness, naturally", link: "/health-supplements" },
+];
+
+function homeProductCategory(product) {
+  const category = product.category;
+  const parts = [
+    typeof category === "string" ? category : category?.name,
+    category?.slug,
+    product.categoryName,
+    product.categorySlug,
+    product.categoryType,
+  ];
+  const value = parts.filter(Boolean).join(" ").toLowerCase().replace(/[_-]/g, " ");
+  if (/supplement|wellness|health/.test(value)) return "supplements";
+  if (/jaggery|gur|jaggri/.test(value)) return "jaggery";
+  if (/ghee/.test(value)) return "ghee";
+  if (/oil|wood pressed|cold pressed/.test(value)) return "oils";
+  return null;
+}
+
 /* =========================================================
    WHY CHOOSE
 ========================================================= */
@@ -749,67 +777,162 @@ export default function Home() {
           </Link>
         </div>
       </section>
-      <BulkOrdersBanner />
-      {/* =====================================================
-            WHY CHOOSE
-        ===================================================== */}
-      <section className="bg-[#fcfdfb] py-20 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#075e4d] mb-12">
-            Why Choose ShreeKrishna Organics?
-          </h2>
-          <div className="relative">
-            <div
-              ref={benefitsScrollRef}
-              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {BENEFITS.map((benefit, index) => {
-                const Icon = benefit.icon;
-                return (
-                  <div
-                    key={index}
-                    className="group min-w-[85%] sm:min-w-[47%] lg:min-w-[31%] snap-start text-center px-5 py-7 rounded-2xl bg-white border border-[#e5eee9] shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
-                  >
-                    <div className="flex justify-center mb-7">
-                      <Icon
-                        size={64}
-                        strokeWidth={1.4}
-                        className="text-[#176c58] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3"
-                      />
-                    </div>
-                    <h3 className="font-serif font-bold text-xl text-[#075e4d]">
-                      {benefit.title}
-                    </h3>
-                    <p className="mt-3 text-gray-600 leading-relaxed max-w-[270px] mx-auto">
-                      {benefit.text}
-                    </p>
-                  </div>
-                );
-              })}
+      {/* CATEGORY-WISE PRODUCT ROWS — directly below See All */}
+      {!loading && HOME_PRODUCT_SECTIONS.map((section) => {
+        const products = featuredProducts.filter(
+          (product) => homeProductCategory(product) === section.key
+        );
+        if (products.length === 0) return null;
+
+        return (
+          <section key={section.key} className="bg-white py-9 border-t border-[#e9eee9]">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 mb-7 text-center">
+              <h2 className="welcome-golden-text inline-block font-serif text-3xl sm:text-4xl font-bold">
+                {section.title}
+              </h2>
+              <p className="welcome-golden-text mx-auto mt-2 w-fit font-serif text-base sm:text-lg">
+                {section.subtitle}
+              </p>
+              <Link
+                to={section.link}
+                className="mt-4 inline-flex rounded-full border border-[#075e4d] px-5 py-2 text-sm font-semibold text-[#075e4d] hover:bg-[#075e4d] hover:text-white transition"
+              >
+                View All →
+              </Link>
             </div>
-            <button
-              type="button"
-              onClick={() => scrollBenefits("left")}
-              aria-label="Previous benefits"
-              className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#dce8e2] text-[#075e4d] shadow-md flex items-center justify-center hover:bg-[#075e4d] hover:text-white active:scale-95 transition-all duration-300"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollBenefits("right")}
-              aria-label="Next benefits"
-              className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#dce8e2] text-[#075e4d] shadow-md flex items-center justify-center hover:bg-[#075e4d] hover:text-white active:scale-95 transition-all duration-300"
-            >
-              <ChevronRight size={20} />
-            </button>
+            <div className="relative">
+              <div
+                id={`home-products-${section.key}`}
+                className="flex gap-5 overflow-x-auto scroll-smooth px-4 sm:px-6 lg:px-12 pb-5"
+              >
+                {products.map((product) => (
+                  <div key={product.id} className="flex-none w-[240px] sm:w-[260px] lg:w-[280px]">
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+              {products.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label={`Previous ${section.title} products`}
+                    onClick={() => document.getElementById(`home-products-${section.key}`)?.scrollBy({ left: -900, behavior: "smooth" })}
+                    className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-white shadow-lg border rounded-full items-center justify-center"
+                  >
+                    <ChevronLeft />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Next ${section.title} products`}
+                    onClick={() => document.getElementById(`home-products-${section.key}`)?.scrollBy({ left: 900, behavior: "smooth" })}
+                    className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-white shadow-lg border rounded-full items-center justify-center"
+                  >
+                    <ChevronRight />
+                  </button>
+                </>
+              )}
+            </div>
+          </section>
+        );
+      })}
+      {/* Compact bulk enquiries section with original animated heading and contact actions. */}
+      <section aria-label="Bulk orders, reselling and white labelling" className="relative overflow-hidden border-y border-[#efe4cc] bg-gradient-to-r from-[#fff8e9] via-[#fffaf1] to-[#f0f5e5] px-4 py-8 sm:py-10">
+        <style>{`@keyframes bulkGradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`}</style>
+        <div className="relative mx-auto max-w-5xl text-center">
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-[#009c78] sm:text-sm">Grow Your Business With</p>
+          <h2 className="font-serif text-2xl font-extrabold leading-tight sm:text-3xl lg:text-4xl">
+            <span className="inline-block bg-gradient-to-r from-[#075e4d] via-[#e9ad28] to-[#075e4d] bg-[length:200%_100%] bg-clip-text text-transparent motion-safe:animate-[bulkGradient_5s_ease-in-out_infinite]">Bulk Orders</span>
+            <span className="mx-2 text-[#f47a18]" aria-hidden="true">|</span>
+            <span className="inline-block bg-gradient-to-r from-[#075e4d] via-[#e9ad28] to-[#075e4d] bg-[length:200%_100%] bg-clip-text text-transparent motion-safe:animate-[bulkGradient_5s_ease-in-out_infinite]">Reselling</span>
+            <span className="mx-2 text-[#f47a18]" aria-hidden="true">|</span>
+            <span className="inline-block bg-gradient-to-r from-[#075e4d] via-[#e9ad28] to-[#075e4d] bg-[length:200%_100%] bg-clip-text text-transparent motion-safe:animate-[bulkGradient_5s_ease-in-out_infinite]">White Labelling</span>
+          </h2>
+          <div className="mx-auto mt-5 flex max-w-2xl flex-col justify-center gap-3 sm:flex-row">
+            <a href="tel:+919011087310" aria-label="Call ShreeKrishna Organics at +91 9011087310" className="flex min-h-12 flex-1 items-center justify-center gap-3 rounded-full bg-[#005744] px-5 py-3 font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#003f32] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005744]">
+              <Phone size={20} aria-hidden="true" /> Call Us <span className="tabular-nums">+91 9011087310</span>
+            </a>
+            <a href={`https://wa.me/919011087310?text=${encodeURIComponent("Hello ShreeKrishna Organics, I am interested in Bulk Orders, Reselling or White Labelling. Please share more details.")}`} target="_blank" rel="noopener noreferrer" aria-label="Contact ShreeKrishna Organics on WhatsApp" className="flex min-h-12 flex-1 items-center justify-center gap-3 rounded-full bg-[#08a52d] px-5 py-3 font-semibold text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#078626] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#08a52d]">
+              <MessageCircle size={20} aria-hidden="true" /> WhatsApp Us
+            </a>
           </div>
         </div>
       </section>
       {/* =====================================================
+            WHY CHOOSE
+        ===================================================== */}
+    <section className="bg-[#fcfdfb] pt-3 pb-6 overflow-hidden">
+  <div className="max-w-7xl mx-auto px-6">
+
+    {/* Section Heading */}
+    <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#075e4d] mb-5">
+      Why Choose ShreeKrishna Organics?
+    </h2>
+
+    <div className="relative">
+
+      {/* Benefits Slider */}
+      <div
+        ref={benefitsScrollRef}
+        className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {BENEFITS.map((benefit, index) => {
+          const Icon = benefit.icon;
+
+          return (
+            <div
+              key={index}
+              className="group min-w-[85%] sm:min-w-[47%] lg:min-w-[31%] snap-start text-center px-5 py-1 rounded-2xl bg-white border border-[#e5eee9] shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
+            >
+              {/* Icon */}
+              <div className="flex justify-center mb-7">
+                <Icon
+                  size={64}
+                  strokeWidth={1.4}
+                  className="text-[#176c58] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3"
+                />
+              </div>
+
+              {/* Title */}
+              <h3 className="font-serif font-bold text-xl text-[#075e4d]">
+                {benefit.title}
+              </h3>
+
+              {/* Description */}
+              <p className="mt-3 text-gray-600 leading-relaxed max-w-[270px] mx-auto">
+                {benefit.text}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Previous Button */}
+      <button
+        type="button"
+        onClick={() => scrollBenefits("left")}
+        aria-label="Previous benefits"
+        className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#dce8e2] text-[#075e4d] shadow-md flex items-center justify-center hover:bg-[#075e4d] hover:text-white active:scale-95 transition-all duration-300"
+      >
+        <ChevronLeft size={20} />
+      </button>
+
+      {/* Next Button */}
+      <button
+        type="button"
+        onClick={() => scrollBenefits("right")}
+        aria-label="Next benefits"
+        className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white border border-[#dce8e2] text-[#075e4d] shadow-md flex items-center justify-center hover:bg-[#075e4d] hover:text-white active:scale-95 transition-all duration-300"
+      >
+        <ChevronRight size={20} />
+      </button>
+
+    </div>
+  </div>
+</section>
+      {/* =====================================================
             NATIVE INGREDIENTS
         ===================================================== */}
-      <section className="bg-[#fff5d7] py-20">
+      <section className="bg-[#fff5d7] py-5">
         <div className="max-w-7xl mx-auto px-5">
           <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#b87425] mb-12">
             Native Ingredients. No Substitutes.
@@ -864,58 +987,11 @@ export default function Home() {
             Oils section removed
             Ghee section removed
         ===================================================== */}
-      {/* =====================================================
-            QUALITY SECTION
-        ===================================================== */}
-      <section className="bg-[#dff5fa] py-20">
-        <div className="max-w-7xl mx-auto px-5">
-          <h2 className="text-center font-serif font-bold text-3xl lg:text-4xl text-[#3193a5] mb-12">
-            Only Perfect Makes The Cut
-          </h2>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => scrollQuality("left")}
-              aria-label="Previous quality card"
-              className="absolute left-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
-            >
-              <ChevronLeft size={22} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollQuality("right")}
-              aria-label="Next quality card"
-              className="absolute right-[-22px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white border border-[#d9cbb7] shadow-md flex items-center justify-center text-[#c56f16] hover:bg-[#fff7e8] transition"
-            >
-              <ChevronRight size={22} />
-            </button>
-            <div
-              ref={qualityScrollRef}
-              className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {QUALITY_ITEMS.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex-none w-[85%] sm:w-[47%] lg:w-[31%] snap-start bg-[#fff9e9] min-h-[390px] rounded-xl p-7 text-center flex flex-col items-center justify-center shadow-sm"
-                >
-                  <div className="text-6xl mb-8">{item.icon}</div>
-                  <h3 className="text-xl lg:text-2xl font-bold text-[#176c58]">
-                    {item.title}
-                  </h3>
-                  <p className="mt-4 text-gray-600 leading-relaxed">
-                    {item.text}
-                  </p>
-                  <CheckCircle2 className="mt-7 text-[#176c58]" size={30} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+     
       {/* =====================================================
             RAW MATERIAL — POSTERS & VIDEOS
         ===================================================== */}
-      <section className="relative overflow-hidden bg-[#f8f4ec] py-20 lg:py-24">
+      <section className="relative overflow-hidden bg-[#f8f4ec] py-5 lg:py-5">
         <div className="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#e7c56d]/15 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-[#075e4d]/10 blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-6">
