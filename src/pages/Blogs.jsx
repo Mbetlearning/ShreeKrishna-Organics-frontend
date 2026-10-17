@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { blogApi } from "../services/blogApi";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -6,101 +7,17 @@ import {
   Clock3,
   Search,
   Leaf,
-  Salad,
   BookOpen,
   Sparkles,
   Heart,
   ChefHat,
-  Flower2,
 } from "lucide-react";
-
-/* =========================================================
-   DEMO BLOG DATA
-   Backend connect करण्याची सध्या गरज नाही.
-========================================================= */
-
-const blogPosts = [
-  {
-    id: 1,
-    title: "Why Traditional Wood-Pressed Oils Matter",
-    slug: "why-traditional-wood-pressed-oils-matter",
-    category: "Food & Wellness",
-    shortDescription:
-      "Discover the traditional process behind wood-pressed oils and how carefully selected seeds become everyday kitchen oils.",
-    image:
-      "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=1200&q=80",
-    readTime: "6 min read",
-    publishedAt: "2026-09-22",
-  },
-
-  {
-    id: 2,
-    title: "A Simple Guide to Choosing Cooking Oils",
-    slug: "simple-guide-to-choosing-cooking-oils",
-    category: "Kitchen Guide",
-    shortDescription:
-      "A simple guide to understanding different cooking oils and choosing the right oil for everyday recipes.",
-    image:
-      "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=1200&q=80",
-    readTime: "5 min read",
-    publishedAt: "2026-09-21",
-  },
-
-  {
-    id: 3,
-    title: "Traditional Jaggery in the Indian Kitchen",
-    slug: "traditional-jaggery-indian-kitchen",
-    category: "Traditional Foods",
-    shortDescription:
-      "Explore how jaggery has been traditionally used in Indian kitchens, beverages, sweets and everyday recipes.",
-    image:
-      "https://images.unsplash.com/photo-1605197161470-d0261cac6767?auto=format&fit=crop&w=1200&q=80",
-    readTime: "7 min read",
-    publishedAt: "2026-09-20",
-  },
-
-  {
-    id: 4,
-    title: "Understanding the Traditional Bilona Method",
-    slug: "understanding-traditional-bilona-method",
-    category: "Traditional Foods",
-    shortDescription:
-      "Learn about the traditional bilona method and the steps involved in preparing ghee using an age-old process.",
-    image:
-      "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=1200&q=80",
-    readTime: "6 min read",
-    publishedAt: "2026-09-19",
-  },
-
-  {
-    id: 5,
-    title: "Building a Wholesome Everyday Kitchen",
-    slug: "building-wholesome-everyday-kitchen",
-    category: "Healthy Living",
-    shortDescription:
-      "Simple ideas for creating an everyday kitchen centred around wholesome ingredients and home-cooked food.",
-    image:
-      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80",
-    readTime: "5 min read",
-    publishedAt: "2026-09-18",
-  },
-
-  {
-    id: 6,
-    title: "From Farm Ingredients to Your Kitchen",
-    slug: "from-farm-ingredients-to-your-kitchen",
-    category: "Our Story",
-    shortDescription:
-      "A look at why ingredient selection, traditional preparation and thoughtful sourcing matter in everyday food.",
-    image:
-      "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?auto=format&fit=crop&w=1200&q=80",
-    readTime: "4 min read",
-    publishedAt: "2026-09-17",
-  },
-];
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80";
+
+const toPlainText = (value = "") => String(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const getReadTime = (content) => `${Math.max(1, Math.ceil(toPlainText(content).split(/\s+/).filter(Boolean).length / 200))} min read`;
 
 /* =========================================================
    BLOG PAGE
@@ -109,6 +26,28 @@ const FALLBACK_IMAGE =
 export default function Blogs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    blogApi.getPublishedBlogs()
+      .then((items) => {
+        if (!active) return;
+        const normalized = (Array.isArray(items) ? items : []).map((item) => ({
+          ...item,
+          category: "Articles",
+          image: item.imageUrl || FALLBACK_IMAGE,
+          shortDescription: toPlainText(item.content).slice(0, 180) + (toPlainText(item.content).length > 180 ? "..." : ""),
+          readTime: getReadTime(item.content),
+        }));
+        setBlogPosts(normalized);
+      })
+      .catch((err) => { if (active) setLoadError(err.message || "Unable to load articles."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   /* =======================================================
      CATEGORIES
@@ -120,7 +59,7 @@ export default function Blogs() {
       .filter(Boolean);
 
     return ["All", ...new Set(uniqueCategories)];
-  }, []);
+  }, [blogPosts]);
 
   /* =======================================================
      FILTER BLOGS
@@ -150,7 +89,7 @@ export default function Blogs() {
     }
 
     return result;
-  }, [searchQuery, selectedCategory]);
+  }, [blogPosts, searchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-[#FAF7F0] text-[#26362F]">
@@ -318,354 +257,6 @@ export default function Blogs() {
             </div>
 
           </div>
-        </div>
-      </section>
-
-      {/* =====================================================
-          BLOG COLLECTIONS
-      ===================================================== */}
-
-      <section
-        className="
-          max-w-7xl
-          mx-auto
-          px-4
-          sm:px-6
-          lg:px-8
-          py-12
-          md:py-16
-        "
-      >
-
-        <div className="text-center">
-
-          <p
-            className="
-              text-[#B17A25]
-              text-xs
-              font-bold
-              uppercase
-              tracking-[0.18em]
-            "
-          >
-            Explore Our Collections
-          </p>
-
-          <h2
-            className="
-              mt-2
-              font-serif
-              text-2xl
-              sm:text-3xl
-              font-bold
-              text-[#213B32]
-            "
-          >
-            Recipes & Stories for Everyday Living
-          </h2>
-
-          <p
-            className="
-              max-w-2xl
-              mx-auto
-              mt-3
-              text-sm
-              leading-6
-              text-gray-500
-            "
-          >
-            Browse our recipe collections or discover articles
-            about food, ingredients and traditional preparation.
-          </p>
-
-        </div>
-
-        {/* COLLECTION CARDS */}
-
-        <div
-          className="
-            mt-9
-            grid
-            grid-cols-1
-            md:grid-cols-2
-            gap-6
-          "
-        >
-
-          {/* MEDICINAL RECIPES */}
-
-          <Link
-            to="/blogs/medicinal-recipes"
-            className="
-              group
-              relative
-              overflow-hidden
-              min-h-[280px]
-              rounded-3xl
-              bg-[#123F34]
-              shadow-sm
-              hover:shadow-xl
-              transition-all
-              duration-300
-            "
-          >
-
-            <img
-              src="https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?auto=format&fit=crop&w=1200&q=80"
-              alt="Medicinal Recipes"
-              className="
-                absolute
-                inset-0
-                w-full
-                h-full
-                object-cover
-                opacity-35
-                group-hover:scale-105
-                transition-transform
-                duration-700
-              "
-            />
-
-            <div
-              className="
-                absolute
-                inset-0
-                bg-gradient-to-t
-                from-[#073d32]
-                via-[#073d32]/70
-                to-transparent
-              "
-            />
-
-            <div
-              className="
-                relative
-                z-10
-                h-full
-                min-h-[280px]
-                flex
-                flex-col
-                justify-end
-                p-7
-                sm:p-8
-              "
-            >
-              <div
-                className="
-                  w-12
-                  h-12
-                  rounded-full
-                  bg-[#F0CF70]
-                  text-[#075e4d]
-                  flex
-                  items-center
-                  justify-center
-                  mb-5
-                "
-              >
-                <Flower2 size={23} />
-              </div>
-
-              <p
-                className="
-                  text-[#F0CF70]
-                  text-xs
-                  font-bold
-                  uppercase
-                  tracking-[0.15em]
-                "
-              >
-                Traditional Kitchen
-              </p>
-
-              <h3
-                className="
-                  mt-2
-                  font-serif
-                  text-2xl
-                  sm:text-3xl
-                  font-bold
-                  text-white
-                "
-              >
-                Medicinal Recipes
-              </h3>
-
-              <p
-                className="
-                  mt-3
-                  max-w-md
-                  text-sm
-                  leading-6
-                  text-white/75
-                "
-              >
-                Explore traditional recipes made with herbs,
-                spices and familiar Indian kitchen ingredients.
-              </p>
-
-              <span
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  mt-5
-                  text-sm
-                  font-bold
-                  text-[#F0CF70]
-                "
-              >
-                Explore Recipes
-
-                <ArrowRight
-                  size={17}
-                  className="
-                    group-hover:translate-x-1
-                    transition-transform
-                  "
-                />
-              </span>
-            </div>
-
-          </Link>
-
-          {/* HEALTHY RECIPES */}
-
-          <Link
-            to="/blogs/healthy-recipes"
-            className="
-              group
-              relative
-              overflow-hidden
-              min-h-[280px]
-              rounded-3xl
-              bg-[#123F34]
-              shadow-sm
-              hover:shadow-xl
-              transition-all
-              duration-300
-            "
-          >
-
-            <img
-              src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1200&q=80"
-              alt="Healthy Recipes"
-              className="
-                absolute
-                inset-0
-                w-full
-                h-full
-                object-cover
-                opacity-40
-                group-hover:scale-105
-                transition-transform
-                duration-700
-              "
-            />
-
-            <div
-              className="
-                absolute
-                inset-0
-                bg-gradient-to-t
-                from-[#073d32]
-                via-[#073d32]/70
-                to-transparent
-              "
-            />
-
-            <div
-              className="
-                relative
-                z-10
-                h-full
-                min-h-[280px]
-                flex
-                flex-col
-                justify-end
-                p-7
-                sm:p-8
-              "
-            >
-              <div
-                className="
-                  w-12
-                  h-12
-                  rounded-full
-                  bg-[#F0CF70]
-                  text-[#075e4d]
-                  flex
-                  items-center
-                  justify-center
-                  mb-5
-                "
-              >
-                <Salad size={23} />
-              </div>
-
-              <p
-                className="
-                  text-[#F0CF70]
-                  text-xs
-                  font-bold
-                  uppercase
-                  tracking-[0.15em]
-                "
-              >
-                Wholesome Kitchen
-              </p>
-
-              <h3
-                className="
-                  mt-2
-                  font-serif
-                  text-2xl
-                  sm:text-3xl
-                  font-bold
-                  text-white
-                "
-              >
-                Healthy Recipes
-              </h3>
-
-              <p
-                className="
-                  mt-3
-                  max-w-md
-                  text-sm
-                  leading-6
-                  text-white/75
-                "
-              >
-                Discover simple, colourful and wholesome recipe
-                ideas for your everyday kitchen.
-              </p>
-
-              <span
-                className="
-                  inline-flex
-                  items-center
-                  gap-2
-                  mt-5
-                  text-sm
-                  font-bold
-                  text-[#F0CF70]
-                "
-              >
-                Explore Recipes
-
-                <ArrowRight
-                  size={17}
-                  className="
-                    group-hover:translate-x-1
-                    transition-transform
-                  "
-                />
-              </span>
-            </div>
-
-          </Link>
-
         </div>
       </section>
 
@@ -849,9 +440,12 @@ export default function Blogs() {
 
         </div>
 
+        {loading && <div className="rounded-2xl border border-[#E7DED0] bg-white px-5 py-12 text-center text-sm text-gray-500">Loading articles...</div>}
+        {loadError && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-5 py-5 text-center text-sm text-red-700">{loadError}</div>}
+
         {/* NO RESULT */}
 
-        {filteredPosts.length === 0 && (
+        {!loading && !loadError && filteredPosts.length === 0 && (
           <div
             className="
               bg-white
@@ -885,7 +479,7 @@ export default function Blogs() {
                 text-gray-500
               "
             >
-              Try another search or category.
+              {blogPosts.length === 0 ? "No published blogs yet. Please check back soon." : "Try another search or category."}
             </p>
 
             <button
@@ -914,7 +508,7 @@ export default function Blogs() {
 
         {/* BLOG GRID */}
 
-        {filteredPosts.length > 0 && (
+        {!loading && !loadError && filteredPosts.length > 0 && (
           <div
             className="
               grid
@@ -1080,11 +674,10 @@ export default function Blogs() {
                     {post.shortDescription}
                   </p>
 
-                  {/* READ ARTICLE
-                      Detail page route नंतर add करू.
-                  */}
+                  {/* READ ARTICLE */}
 
-                  <div
+                  <Link
+                    to={`/blogs/${post.slug}`}
                     className="
                       inline-flex
                       items-center
@@ -1104,7 +697,7 @@ export default function Blogs() {
                         transition-transform
                       "
                     />
-                  </div>
+                  </Link>
 
                 </div>
               </article>
@@ -1393,69 +986,10 @@ export default function Blogs() {
               text-white/75
             "
           >
-            Explore traditional recipes, wholesome food ideas
-            and stories inspired by ingredients from the
-            ShreeKrishna Organics kitchen.
+            Explore our latest articles, ingredient stories and traditional food wisdom from ShreeKrishna Organics.
           </p>
 
-          <div
-            className="
-              mt-7
-              flex
-              flex-col
-              sm:flex-row
-              justify-center
-              gap-3
-            "
-          >
 
-            <Link
-              to="/blogs/medicinal-recipes"
-              className="
-                inline-flex
-                items-center
-                justify-center
-                gap-2
-                px-6
-                py-3
-                rounded-xl
-                bg-[#F0CF70]
-                hover:bg-[#E5C25E]
-                text-[#075e4d]
-                text-sm
-                font-bold
-                transition
-              "
-            >
-              Medicinal Recipes
-              <ArrowRight size={16} />
-            </Link>
-
-            <Link
-              to="/blogs/healthy-recipes"
-              className="
-                inline-flex
-                items-center
-                justify-center
-                gap-2
-                px-6
-                py-3
-                rounded-xl
-                border
-                border-white/25
-                bg-white/5
-                hover:bg-white/10
-                text-white
-                text-sm
-                font-bold
-                transition
-              "
-            >
-              Healthy Recipes
-              <ArrowRight size={16} />
-            </Link>
-
-          </div>
 
         </div>
       </section>
