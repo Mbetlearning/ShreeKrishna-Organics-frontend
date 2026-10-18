@@ -258,41 +258,60 @@ export default function Home() {
     }
     loadProducts();
   }, []);
-  /* =======================================================
-        LOAD WEBSITE TESTIMONIALS
-     ======================================================= */
-  useEffect(() => {
-    const controller = new AbortController();
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080")
-      .replace(/\/$/, "");
+  /*/* =======================================================
+   LOAD WEBSITE TESTIMONIALS
+======================================================= */
+useEffect(() => {
+  const controller = new AbortController();
 
-    async function loadReviews() {
-      try {
-        const response = await fetch(`${apiBase}/api/v1/testimonials`, {
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error(`Reviews API: ${response.status}`);
-        const data = await response.json();
-        if (!Array.isArray(data)) throw new Error("Unexpected reviews response");
-        setReviews(
-          data
-            .filter((item) => item && item.active !== false)
-            .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-            .slice(0, 4)
-        );
-        setReviewsError(false);
-      } catch (error) {
-        if (error.name === "AbortError") return;
-        console.error("Error loading testimonials:", error);
-        setReviewsError(true);
-      } finally {
-        if (!controller.signal.aborted) setReviewsLoading(false);
+  const apiBase = (
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:8080/api/v1"
+  ).replace(/\/$/, "");
+
+  async function loadReviews() {
+    try {
+      const response = await fetch(`${apiBase}/testimonials`, {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Reviews API: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Unexpected reviews response");
+      }
+
+      setReviews(
+        data
+          .filter((item) => item && item.active !== false)
+          .sort(
+            (a, b) =>
+              (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+          )
+          .slice(0, 4)
+      );
+
+      setReviewsError(false);
+    } catch (error) {
+      if (error.name === "AbortError") return;
+
+      console.error("Error loading testimonials:", error);
+      setReviewsError(true);
+    } finally {
+      if (!controller.signal.aborted) {
+        setReviewsLoading(false);
       }
     }
-    loadReviews();
-    return () => controller.abort();
-  }, []);
+  }
 
+  loadReviews();
+
+  return () => controller.abort();
+}, []);
   /* =======================================================
         LOAD PUBLIC YOUTUBE VIDEOS
      ======================================================= */
