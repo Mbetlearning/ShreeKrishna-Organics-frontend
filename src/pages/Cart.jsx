@@ -8,7 +8,6 @@ import {
   ArrowRight, 
   Tag, 
   ShieldCheck, 
-  Truck, 
   ArrowLeft,
   X
 } from 'lucide-react';
@@ -32,10 +31,6 @@ export default function Cart() {
     subtotal,
     productSavings,
     couponDiscount,
-    deliveryFee,
-    freeShippingThreshold,
-    amountNeededForFreeShipping,
-    total,
     totalItems
   } = useCart();
 
@@ -115,8 +110,6 @@ if (cartError && cartItems.length === 0) {
             Clear Entire Cart
           </button>
         </div>
-
-        
 
         {/* Cart Content 2-Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -205,9 +198,6 @@ if (cartError && cartItems.length === 0) {
     )}
   </div>
 </div>
-
-
-
                   {/* Quantity Adjuster & Item Subtotal */}
                   <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E8DFD3]">
                     
@@ -296,27 +286,20 @@ if (cartError && cartItems.length === 0) {
                   </div>
                 )}
 
-                <div className="flex justify-between">
-                  <span>Standard Delivery</span>
-                  <span className="font-semibold text-stone-900 font-sans">
-                    {deliveryFee === 0 ? (
-                      <span className="text-emerald-800 font-bold uppercase text-xs">Free</span>
-                    ) : (
-                      `₹${deliveryFee}`
-                    )}
+                <div className="flex justify-between gap-3">
+                  <span>Delivery Charge</span>
+                  <span className="font-semibold text-stone-900 text-right">
+                    Calculated at checkout
                   </span>
                 </div>
               </div>
 
-              {/* Grand Total */}
-              <div className="pt-4 border-t border-[#E8DFD3] flex items-baseline justify-between">
-                <div>
-                  <span className="text-base font-bold font-serif text-[#2B241D] block">Grand Total</span>
-                  <span className="text-[10px] text-stone-400">Inclusive of all taxes</span>
-                </div>
-                <span className="text-2xl font-bold font-sans text-[#2B241D]">
-                  ₹{total}
-                </span>
+              {/* The backend calculates the final total at checkout. */}
+              <div className="pt-4 border-t border-[#E8DFD3]">
+                <p className="text-xs text-stone-500">
+                  Final payable amount, delivery charges and any applicable
+                  payment charges will be shown at checkout.
+                </p>
               </div>
 
               {/* Checkout Button */}
@@ -328,7 +311,7 @@ if (cartError && cartItems.length === 0) {
                 icon={ArrowRight}
                 iconPosition="right"
               >
-                Proceed to Checkout (₹{total})
+                Proceed to Checkout
               </Button>
 
               {/* Trust Badge */}
