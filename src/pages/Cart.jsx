@@ -116,29 +116,7 @@ if (cartError && cartItems.length === 0) {
           </button>
         </div>
 
-        {/* Free Shipping Progress Indicator */}
-        <div className="bg-white p-4 rounded-2xl border border-[#E8DFD3] shadow-subtle mb-8">
-          <div className="flex items-center justify-between text-xs font-semibold mb-2">
-            <span className="flex items-center gap-1.5 text-stone-700">
-              <Truck className="w-4 h-4 text-[#B5563C]" />
-              {amountNeededForFreeShipping === 0 ? (
-                <span className="text-emerald-800 font-bold">🎉 Congratulations! You have unlocked Free Express Shipping!</span>
-              ) : (
-                <span>Add <strong className="text-[#2B241D]">₹{amountNeededForFreeShipping}</strong> more for Free Delivery</span>
-              )}
-            </span>
-            <span className="text-stone-500">Goal: ₹{freeShippingThreshold}</span>
-          </div>
-          
-          <div className="w-full bg-[#FAF6EF] rounded-full h-2 overflow-hidden border border-[#E8DFD3]">
-            <div
-              className="bg-[#B5563C] h-full transition-all duration-500 rounded-full"
-              style={{
-                width: `${Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100))}%`
-              }}
-            />
-          </div>
-        </div>
+        
 
         {/* Cart Content 2-Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -290,50 +268,7 @@ if (cartError && cartItems.length === 0) {
           {/* Right Column: Order Summary & Coupon */}
           <div className="lg:col-span-4 space-y-6">
             
-            {/* Coupon Box */}
-            <div className="bg-white rounded-3xl p-6 border border-[#E8DFD3] shadow-subtle">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 mb-3 flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-[#B5563C]" /> Apply Promo Coupon
-              </h3>
-
-              {appliedCoupon ? (
-                <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs">
-                  <div>
-                    <span className="font-mono font-bold text-emerald-900 block">{appliedCoupon.code}</span>
-                    <span className="text-[11px] text-emerald-700">{appliedCoupon.description}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeCoupon}
-                    className="p-1 rounded-lg text-emerald-800 hover:bg-emerald-100 cursor-pointer"
-                    aria-label="Remove coupon"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleApplyCoupon} className="space-y-2">
-                  <div className="flex items-center bg-[#FAF6EF] rounded-2xl border border-[#E8DFD3] p-1 focus-within:border-[#B5563C]">
-                    <input
-                      type="text"
-                      placeholder="e.g. SHREEKRISHNA10"
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value)}
-                      className="w-full bg-transparent px-3 py-2 text-xs uppercase font-mono text-stone-800 placeholder-stone-400 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-[#2B241D] hover:bg-[#B5563C] text-white px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-colors"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-stone-400">
-                    Use code <code className="font-mono text-stone-700 bg-stone-100 px-1 py-0.5 rounded">SHREEKRISHNA10</code> for 10% off.
-                  </p>
-                </form>
-              )}
-            </div>
+          
 
             {/* Price Breakdown Summary */}
             <div className="bg-white rounded-3xl p-6 border border-[#E8DFD3] shadow-subtle space-y-4">
