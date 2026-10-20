@@ -32,6 +32,7 @@ import { customerOrderApi } from '../services/customerOrderApi';
 
 import { apiRequest } from '../services/api';
 import { checkoutSessionApi } from '../services/checkoutSessionAPI';
+import { clearBuyNowIntent } from '../services/buyNowIntent';
 
 // Test Mode only. Do not turn on for a production build before completing payment/webhook tests.
 const ONLINE_TEST_ENABLED = import.meta.env.VITE_ENABLE_CHECKOUT_RAZORPAY_TEST === 'true';
@@ -154,9 +155,10 @@ function validateAddress(address) {
 
 }
 
-export default function Checkout() {
+export default function Checkout({ buyNowIntent = null }) {
 
   const navigate = useNavigate();
+  const isBuyNow = Boolean(buyNowIntent);
 
   const { user } = useAuth();
 
@@ -173,6 +175,10 @@ export default function Checkout() {
   const [formData, setFormData] = useState(EMPTY_ADDRESS);
 
   const [summary, setSummary] = useState(null);
+  const [buyNowDraft, setBuyNowDraft] = useState(null);
+  const [buyNowQuoteError, setBuyNowQuoteError] = useState('');
+  const [buyNowQuoteLoading, setBuyNowQuoteLoading] = useState(false);
+  const [buyNowQuoteRetry, setBuyNowQuoteRetry] = useState(0);
 
   const [loading, setLoading] = useState(true);
 
@@ -227,6 +233,7 @@ const [checkingPayment, setCheckingPayment] = useState(false);
     if (sessionKey) sessionStorage.setItem(sessionKey, id);
   };
   const forgetSession = () => {
+    if (isBuyNow) clearBuyNowIntent();
     setPendingSessionId(null);
     setSessionNotice('');
     if (sessionKey) sessionStorage.removeItem(sessionKey);
@@ -521,7 +528,7 @@ const loadCheckout = async () => {
 
           addressApi.getAddresses(),
 
-          customerOrderApi.getCheckoutSummary(),
+          isBuyNow ? Promise.resolve(null) : customerOrderApi.getCheckoutSummary(),
 
         ]);
 
@@ -533,7 +540,11 @@ const loadCheckout = async () => {
 
       setAddresses(list);
 
-      setSummary(checkoutSummary);
+      setSummary(isBuyNow ? {
+        items: [{ variantId: buyNowIntent.variantId, productName: buyNowIntent.productName,
+          quantity: buyNowIntent.quantity, available: true, unitPrice: 0, lineTotal: 0 }],
+        subtotal: 0, totalAmount: 0, deliveryCharge: 0, taxAmount: 0,
+      } : checkoutSummary);
 
       setSelectedAddressId((current) => {
 
@@ -579,7 +590,7 @@ const loadCheckout = async () => {
 
             addressApi.getAddresses(),
 
-            customerOrderApi.getCheckoutSummary(),
+            isBuyNow ? Promise.resolve(null) : customerOrderApi.getCheckoutSummary(),
 
           ]);
 
@@ -593,7 +604,11 @@ const loadCheckout = async () => {
 
         setAddresses(list);
 
-        setSummary(checkoutSummary);
+        setSummary(isBuyNow ? {
+        items: [{ variantId: buyNowIntent.variantId, productName: buyNowIntent.productName,
+          quantity: buyNowIntent.quantity, available: true, unitPrice: 0, lineTotal: 0 }],
+        subtotal: 0, totalAmount: 0, deliveryCharge: 0, taxAmount: 0,
+      } : checkoutSummary);
 
         const preferred =
 
@@ -639,6 +654,42 @@ const loadCheckout = async () => {
     };
 
   }, []);
+
+  // Stage 3: creating a CREATED Buy Now draft has no reservation or payment.
+  // It lets the customer review the ACTUAL server-calculated price BEFORE paying.
+  useEffect(() => {
+    if (!isBuyNow || !selectedAddressId) return;
+    let active = true;
+    setBuyNowDraft(null);
+    setBuyNowQuoteError('');
+    setBuyNowQuoteLoading(true);
+    checkoutSessionApi.createBuyNowDraft(
+      selectedAddressId, buyNowIntent.variantId, buyNowIntent.quantity
+    ).then(draft => {
+      if (!active) return;
+      if (!draft?.id || !draft?.items?.length) throw new Error('Buy Now quote unavailable.');
+      setBuyNowDraft(draft);
+      const subtotal = Number(draft.subtotal || 0);
+      const totalAmount = Number(draft.totalAmount || 0);
+      setSummary({
+        items: draft.items.map(item => ({ ...item, available: true })),
+        subtotal, totalAmount,
+        deliveryCharge: Math.max(0, Math.round((totalAmount - subtotal) * 100) / 100),
+        taxAmount: 0,
+        discountAmount: 0,
+      });
+    }).catch(err => {
+      if (active) setBuyNowQuoteError(err.message || 'Unable to calculate Buy Now total.');
+    }).finally(() => {
+      if (active) setBuyNowQuoteLoading(false);
+    });
+    return () => { active = false; };
+  }, [isBuyNow, selectedAddressId, buyNowIntent?.variantId, buyNowIntent?.quantity, buyNowQuoteRetry]);
+
+  const activeBuyNowDraft = isBuyNow && buyNowDraft &&
+    String(buyNowDraft.addressId) === String(selectedAddressId) &&
+    new Date(buyNowDraft.expiresAt).getTime() > Date.now()
+      ? buyNowDraft : null;
 
   const handleInputChange = (event) => {
 
@@ -1108,7 +1159,7 @@ const loadCheckout = async () => {
       !summary?.items?.length ||
       summary.items.some((item) => !item.available)
     ) {
-      addToast('Select a valid address and check your cart.', 'error');
+      addToast('Select a valid address and check your selection.', 'error');
       return;
     }
 
@@ -1138,7 +1189,12 @@ const loadCheckout = async () => {
         );
       }
 
-      const draft = await checkoutSessionApi.createDraft(selectedAddressId);
+      if (isBuyNow && !activeBuyNowDraft) {
+        throw new Error('Your Buy Now quote expired. Refresh the quote and review the amount before paying.');
+      }
+      const draft = isBuyNow
+        ? activeBuyNowDraft
+        : await checkoutSessionApi.createDraft(selectedAddressId);
       if (!draft?.id) {
         throw new Error('Checkout session was not created.');
       }
@@ -1166,9 +1222,9 @@ const loadCheckout = async () => {
       return;
     }
     if (!selectedAddressId) return addToast('Please select a delivery address.', 'error');
-    if (!summary?.items?.length) return addToast('Your cart is empty.', 'error');
+    if (!summary?.items?.length) return addToast('Your checkout selection is empty.', 'error');
     if (summary.items.some((item) => !item.available)) {
-      return addToast('Some products are unavailable. Update your cart.', 'error');
+      return addToast('Some selected products are unavailable.', 'error');
     }
     setSubmitting(true);
     try {
@@ -1176,14 +1232,29 @@ const loadCheckout = async () => {
       if (eligibility?.canAttemptCOD !== true || eligibility?.unresolvedPayment === true) {
         throw new Error(eligibility?.message || 'Earlier payment unresolved.');
       }
-      const order = await customerOrderApi.placeOrder(selectedAddressId, 'COD');
-      if (!order?.id) throw new Error('Order confirmation unavailable. Check your orders before retrying.');
+      let order;
+      if (isBuyNow) {
+        const draft = activeBuyNowDraft;
+        if (!draft) throw new Error('Buy Now quote expired. Refresh it before ordering.');
+        if (!draft?.id) throw new Error('Buy Now checkout draft was not created.');
+        // Save the draft to prevent a second order after an ambiguous network failure.
+        // Recovery APIs own any subsequent reconciliation; never blindly resubmit.
+        rememberSession(draft.id);
+        const result = await checkoutSessionApi.placeBuyNowCod(draft.id);
+        if (!result?.orderId) throw new Error(result?.message || 'Order confirmation unavailable. Check My Orders before retrying.');
+        order = { id: result.orderId };
+        forgetSession();
+        clearBuyNowIntent();
+      } else {
+        order = await customerOrderApi.placeOrder(selectedAddressId, 'COD');
+        if (!order?.id) throw new Error('Order confirmation unavailable. Check your orders before retrying.');
+      }
       try { await refreshCart(); } catch (e) { console.warn(e); }
       addToast(`Order ${order.orderNumber || order.id} placed successfully!`, 'success');
       navigate('/orders', { replace: true, state: { placedOrderId: order.id } });
     } catch (err) {
       addToast(err.message || 'Order could not be placed. Check your orders before retrying.', 'error');
-      try { setSummary(await customerOrderApi.getCheckoutSummary()); } catch { /* preserve original error */ }
+      if (!isBuyNow) { try { setSummary(await customerOrderApi.getCheckoutSummary()); } catch { /* preserve original error */ } }
     } finally {
       setSubmitting(false);
     }
@@ -1281,7 +1352,7 @@ const loadCheckout = async () => {
 
           <Link
 
-            to="/cart"
+            to={isBuyNow ? '/shop' : '/cart'}
 
             className="inline-flex items-center gap-2 text-sm text-stone-500 hover:text-[#B5563C] mb-3"
 
@@ -1289,13 +1360,13 @@ const loadCheckout = async () => {
 
             <ArrowLeft size={16} />
 
-            Return to Cart
+            {isBuyNow ? 'Return to Shopping' : 'Return to Cart'}
 
           </Link>
 
           <h1 className="text-3xl font-serif font-bold text-[#2B241D]">
 
-            Checkout & Shipping
+            {isBuyNow ? 'Buy Now — Checkout & Shipping' : 'Checkout & Shipping'}
 
           </h1>
 
@@ -1432,7 +1503,7 @@ const loadCheckout = async () => {
 
 )}
 
-          {loading || cartLoading ? (
+          {loading || (!isBuyNow && cartLoading) ? (
 
           <div className="bg-white p-12 rounded-3xl text-center">
 
@@ -1882,7 +1953,7 @@ const loadCheckout = async () => {
 
                   {items.map((item) => {
 
-                    const cartProduct = cartItems.find(
+                    const cartProduct = isBuyNow ? { image: buyNowIntent?.image } : cartItems.find(
 
                       (cartItem) =>
 
@@ -1970,6 +2041,27 @@ const loadCheckout = async () => {
 
                 </div>
 
+                {isBuyNow ? (
+                  <div className="pt-4 border-t border-[#E8DFD3] text-sm text-stone-700 space-y-3">
+                    <p className="font-semibold">Buy Now — selected product only</p>
+                    {buyNowQuoteLoading ? <p>Calculating final price using the backend...</p> :
+                    buyNowQuoteError || !activeBuyNowDraft ? (
+                      <div role="alert" className="text-red-700">
+                        <p>{buyNowQuoteError || 'The quote expired. Please refresh to review the final amount.'}</p>
+                        <button type="button" className="underline font-semibold mt-2" onClick={() => setBuyNowQuoteRetry(x => x + 1)}>Refresh Buy Now quote</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span>Product subtotal</span><span>{money(summary.subtotal)}</span></div>
+                        <div className="flex justify-between"><span>Delivery and applicable additional taxes</span><span>{money(Number(summary.totalAmount) - Number(summary.subtotal))}</span></div>
+                        {paymentMethod === 'COD' && <div className="flex justify-between"><span>COD charge (5%)</span><span>{money(codCharge)}</span></div>}
+                        <div className="flex justify-between font-bold text-lg border-t pt-3"><span>Total Payable</span><span>{money(payableTotal)}</span></div>
+                        <p className="text-xs text-stone-500">Amounts are calculated by the backend checkout draft. GST included in product prices, if applicable, is not itemized in this draft response.</p>
+                      </>
+                    )}
+                    <p className="text-xs">Your existing cart items are not included in or removed by this order.</p>
+                  </div>
+                ) : (
                 <div className="space-y-3 pt-4 border-t border-[#E8DFD3] text-sm">
                   <div className="flex justify-between">
                     <span>Product Price (Excluding GST)</span>
@@ -2030,6 +2122,8 @@ const loadCheckout = async () => {
                   </div>
                 </div>
 
+                )}
+
                 {hasUnavailableItems && (
 
                   <p className="text-sm text-red-600">
@@ -2083,7 +2177,9 @@ const loadCheckout = async () => {
 
                     loading ||
 
-                    cartLoading ||
+                    (!isBuyNow && cartLoading) ||
+                    (isBuyNow && !activeBuyNowDraft) ||
+                    buyNowQuoteLoading ||
 
                     checkingPayment ||
 

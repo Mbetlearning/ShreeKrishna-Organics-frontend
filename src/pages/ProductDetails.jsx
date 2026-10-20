@@ -11,6 +11,7 @@ import { getProductReviews, getReviewSummary } from '../services/reviewApi';
 import ProductReviews from '../components/ProductReviews';
 import ProductIngredientsSlider from '../components/ProductIngredientsSlider';
 import ProductGallery from '../components/ProductGallery';
+import { saveBuyNowIntent } from '../services/buyNowIntent';
 
 export default function ProductDetails() {
   const { slug } = useParams();
@@ -83,19 +84,23 @@ export default function ProductDetails() {
     return false;
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!canPurchase) return;
-    if (!requireCustomerLogin('add-to-cart')) return;
     // Existing CartContext is local/demo until Cart API integration.
-    addToCart(product, selectedSize, quantity);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 1500);
+    const success = await addToCart(product, selectedSize, quantity);
+    if (success) {
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 1500);
+    }
   };
   const handleBuyNow = () => {
     if (!canPurchase) return;
-    if (!requireCustomerLogin('buy-now')) return;
-    addToCart(product, selectedSize, quantity);
-    navigate('/checkout');
+    try {
+      saveBuyNowIntent(product, selectedSize, quantity);
+      navigate('/checkout?mode=buy-now');
+    } catch (error) {
+      console.error('Unable to initiate Buy Now checkout:', error);
+    }
   };
 
   return (

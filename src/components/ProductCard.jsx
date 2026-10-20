@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { getReviewSummary } from '../services/reviewApi';
 import { apiRequest } from '../services/api';
+import { saveBuyNowIntent } from '../services/buyNowIntent';
 
 // Share the combo request between all product cards (avoid one request per card).
 let activeComboVariantIdsPromise;
@@ -110,7 +111,6 @@ useEffect(() => {
     e.preventDefault();
     e.stopPropagation();
     if (!canPurchase || adding) return;
-    if (!requireCustomerLogin('add-to-cart')) return;
     setAdding(true);
     try {
       const success = await addToCart(product, selectedSize, 1);
@@ -128,15 +128,11 @@ useEffect(() => {
     e.preventDefault();
     e.stopPropagation();
     if (!canPurchase || adding) return;
-    if (!requireCustomerLogin('buy-now')) return;
-    setAdding(true);
     try {
-      const success = await addToCart(product, selectedSize, 1);
-      if (success) navigate('/checkout');
+      saveBuyNowIntent(product, selectedSize, 1);
+      navigate('/checkout?mode=buy-now');
     } catch (error) {
-      console.error('Unable to proceed to checkout:', error);
-    } finally {
-      setAdding(false);
+      console.error('Unable to initiate Buy Now checkout:', error);
     }
   };
   return (
