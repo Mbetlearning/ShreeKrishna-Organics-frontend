@@ -2042,6 +2042,33 @@ const loadCheckout = async () => {
 
                 )}
 
+                {/* Explain exactly why checkout is blocked; never bypass payment reconciliation. */}
+                {(pendingSessionId || pendingOrder || !selectedAddressId ||
+                  hasUnavailableItems ||
+                  (paymentMethod === 'RAZORPAY' && !ONLINE_TEST_ENABLED)) && (
+                  <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                    {pendingSessionId ? (
+                      <>
+                        <p className="font-semibold">Previous online checkout requires verification.</p>
+                        <p className="mt-1">Please use Check Payment Status in the section above. If the server confirms that no payment was captured, use the safe retry, switch-to-COD, or cancel options there. A new order is blocked to prevent duplicate charges.</p>
+                        <button type="button" onClick={checkCheckoutSession}
+                          disabled={checkingPayment || submitting || paymentOpen}
+                          className="mt-2 underline font-semibold disabled:opacity-50">
+                          {checkingPayment ? 'Checking payment...' : 'Check Payment Status'}
+                        </button>
+                      </>
+                    ) : pendingOrder ? (
+                      <>An earlier online order is awaiting confirmation. Use Check Payment Status above before placing another order.</>
+                    ) : !selectedAddressId ? (
+                      <>Select or save a delivery address to continue.</>
+                    ) : hasUnavailableItems ? (
+                      <>Some cart items are unavailable. Update your cart before checkout.</>
+                    ) : (
+                      <>Razorpay test mode is disabled. Enable VITE_ENABLE_CHECKOUT_RAZORPAY_TEST=true in your local frontend environment and restart Vite, or choose COD.</>
+                    )}
+                  </div>
+                )}
+
                 <button
 
                   type="button"
@@ -2053,6 +2080,14 @@ const loadCheckout = async () => {
                     submitting ||
 
                     savingAddress ||
+
+                    loading ||
+
+                    cartLoading ||
+
+                    checkingPayment ||
+
+                    paymentOpen ||
 
                     !selectedAddressId ||
 

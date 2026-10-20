@@ -34,7 +34,6 @@ export function AuthProvider({ children }) {
     window.addEventListener('storage', syncSession);
     window.addEventListener('focus', syncSession);
 
-    // Periodically detect expiration even without API calls.
     const interval = window.setInterval(syncSession, 30000);
 
     return () => {
@@ -48,8 +47,8 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Default CUSTOMER preserves existing customer Login.jsx.
-  // Admin Login can call login(email, password, 'ADMIN').
+  // Existing Email + Password Login
+  // Admin can call login(email, password, 'ADMIN').
   const login = async (
     email,
     password,
@@ -82,6 +81,46 @@ export function AuthProvider({ children }) {
       };
     } catch (error) {
       addToast(error.message || 'Login failed', 'error');
+
+      return {
+        success: false,
+        error: error.message,
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // New Customer Mobile OTP Login
+  // Backend must verify OTP before issuing JWT.
+  const loginWithOtp = async (verificationData) => {
+    setLoading(true);
+
+    try {
+      const response = await authService.loginWithOtp(
+        verificationData
+      );
+
+      if (normalizeRole(response.user.role) !== 'CUSTOMER') {
+        throw new Error(
+          'OTP login is available only for customers.'
+        );
+      }
+
+      authService.saveSession(response);
+      setUser(response.user);
+
+      addToast('Mobile number verified. Login successful!');
+
+      return {
+        success: true,
+        user: response.user,
+      };
+    } catch (error) {
+      addToast(
+        error.message || 'OTP verification failed',
+        'error'
+      );
 
       return {
         success: false,
@@ -137,6 +176,7 @@ export function AuthProvider({ children }) {
         isAuthenticated: !!user,
         loading,
         login,
+        loginWithOtp,
         register,
         logout,
         hasRole,
