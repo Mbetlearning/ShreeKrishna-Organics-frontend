@@ -678,7 +678,7 @@ useEffect(() => {
         <div className="relative z-10 max-w-7xl mx-auto px-4">
           <div className="text-center">
             <h2 className="welcome-golden-text font-serif text-3xl lg:text-4xl font-bold">
-              Welcome To ShreeKrishna Organics!
+              Welcome To Shreekrishna Organics!
             </h2>
             <p className="welcome-golden-text font-serif text-xl lg:text-3xl mt-2">
               You're One Step Closer to Purity
@@ -858,7 +858,7 @@ useEffect(() => {
       <section aria-label="Bulk orders, reselling and white labelling" className="relative overflow-hidden border-y border-[#efe4cc] bg-gradient-to-r from-[#fff8e9] via-[#fffaf1] to-[#f0f5e5] px-4 py-8 sm:py-10">
         <style>{`@keyframes bulkGradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`}</style>
         <div className="relative mx-auto max-w-5xl text-center">
-          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-[#009c78] sm:text-sm">Grow Your Business With</p>
+          <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.18em] text-[#009c78] sm:text-sm">Grow Your Business With us</p>
           <h2 className="font-serif text-2xl font-extrabold leading-tight sm:text-3xl lg:text-4xl">
             <span className="inline-block bg-gradient-to-r from-[#075e4d] via-[#e9ad28] to-[#075e4d] bg-[length:200%_100%] bg-clip-text text-transparent motion-safe:animate-[bulkGradient_5s_ease-in-out_infinite]">Bulk Orders</span>
             <span className="mx-2 text-[#f47a18]" aria-hidden="true">|</span>
@@ -884,7 +884,7 @@ useEffect(() => {
 
     {/* Section Heading */}
     <h2 className="text-center text-3xl lg:text-4xl font-serif font-bold text-[#075e4d] mb-5">
-      Why Choose ShreeKrishna Organics?
+      Why Choose Shreekrishna Organics?
     </h2>
 
     <div className="relative">

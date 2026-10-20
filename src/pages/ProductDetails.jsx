@@ -9,6 +9,8 @@ import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { getProductReviews, getReviewSummary } from '../services/reviewApi';
 import ProductReviews from '../components/ProductReviews';
+import ProductIngredientsSlider from '../components/ProductIngredientsSlider';
+import ProductGallery from '../components/ProductGallery';
 
 export default function ProductDetails() {
   const { slug } = useParams();
@@ -112,16 +114,7 @@ export default function ProductDetails() {
                   <div className="w-full h-full flex items-center justify-center text-stone-400">Image not available</div>}
                 {discount > 0 && <span className="absolute top-4 right-4 px-2.5 py-1 bg-[#B5563C] text-white text-xs font-bold rounded-lg">{discount}% OFF</span>}
               </div>
-              {product.gallery?.length > 1 && (
-                <div className="flex items-center gap-3 overflow-x-auto pb-1">
-                  {product.gallery.map((url, index) => (
-                    <button key={`${url}-${index}`} type="button" onClick={() => setSelectedImage(url)}
-                      className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 shrink-0 ${selectedImage === url ? 'border-[#B5563C]' : 'border-[#E8DFD3]'}`}>
-                      <img src={url} alt={`${product.name} view ${index + 1}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
+
             </div>
             <div className="lg:col-span-6 flex flex-col space-y-6">
               <div>
@@ -168,13 +161,17 @@ export default function ProductDetails() {
               </div>
             </div>
           </div>
-          {product.description && (
-            <div className="mt-12 pt-8 border-t border-[#E8DFD3]">
-              <h3 className="font-serif font-bold text-lg text-stone-900 mb-3">Product Description</h3>
-              <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-line">{product.description}</p>
-            </div>
-          )}
         </div>
+        <ProductGallery key={product.id} productId={product.id} />
+        {product.description && (
+          <section className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E8DFD3] shadow-subtle mb-12" aria-labelledby="product-description-heading">
+            <h2 id="product-description-heading" className="font-serif font-bold text-xl sm:text-2xl text-[#2B241D] mb-4">
+              Product Description
+            </h2>
+            <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-line">{product.description}</p>
+          </section>
+        )}
+        <ProductIngredientsSlider />
         <ProductReviews key={product.id} productId={product.id} />
         {relatedProducts.length > 0 && (
           <div className="mt-16">

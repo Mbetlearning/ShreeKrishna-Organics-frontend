@@ -70,45 +70,130 @@ export default function Footer() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-11">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-9 lg:gap-8">
 
-              {/* Brand */}
-              <div className="lg:col-span-4">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-[#FFF8E7] text-[#173b32] flex items-center justify-center font-serif font-black text-xl shadow-lg border border-[#E7C56D]/60">
-                    SK
-                  </div>
-                  <div>
-                    <div className="font-serif font-bold text-xl sm:text-2xl tracking-wide text-white">
-                      SHREEKRISHNA ORGANICS
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] tracking-[0.28em] text-[#E7C56D] font-semibold uppercase mt-1">
-                      Pure Tradition, Naturally
-                    </div>
-                  </div>
-                </div>
+              
+{/* ================= BRAND SECTION ================= */}
+<div className="lg:col-span-4 min-w-0">
 
-                <p className="text-xs sm:text-sm text-emerald-50/85 leading-6 max-w-md">
-                  Reviving India's traditional cold & wood-pressing heritage. We bring pure,
-                  thoughtfully made edible oils, organic jaggery and Vedic A2 ghee to conscious kitchens.
-                </p>
+  {/* Brand Logo */}
+  <div className="mb-7 flex flex-col items-start">
 
-                <div className="mt-5 space-y-3 text-xs text-emerald-50/90">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 text-[#E7C56D] shrink-0 mt-0.5" />
-                    <span>
-                      <strong className="text-white">ShreeKrishna Organics Pvt Ltd</strong><br />
-                      Karad, Maharashtra - 415110
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-4 h-4 text-[#E7C56D] shrink-0" />
-                    <span>+91 98765 43210 <span className="text-emerald-100/60">(Mon–Sat, 9am–7pm)</span></span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-[#E7C56D] shrink-0" />
-                    <span className="break-all">care@shreekrishnaorganics.com</span>
-                  </div>
-                </div>
-              </div>
+    <div className="inline-flex max-w-full flex-col items-center">
+
+      {/* SHREEKRISHNA */}
+      <span
+        className="block text-[38px] sm:text-[46px] lg:text-[50px] font-black italic text-white"
+        style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontWeight: 900,
+          letterSpacing: "-2.5px",
+          lineHeight: 1.15,
+          textShadow: "0 3px 12px rgba(0,0,0,0.15)",
+        }}
+      >
+        shreekrishna
+      </span>
+
+      {/* ORGANICS */}
+      <span
+        className="mt-2 text-[14px] sm:text-[16px] lg:text-[18px] font-extrabold uppercase text-[#E7C56D]"
+        style={{
+          letterSpacing: "6px",
+          lineHeight: 1.5,
+        }}
+      >
+        ORGANICS
+      </span>
+
+    </div>
+
+    {/* Brand Tagline */}
+    <div className="mt-5 flex max-w-full items-center gap-2 sm:gap-3">
+
+      <div className="h-[2px] w-5 sm:w-8 shrink-0 bg-[#E7C56D]" />
+
+      <span
+        className="text-center text-[11px] sm:text-[13px] lg:text-[14px] font-bold uppercase text-[#E7C56D]"
+        style={{
+          letterSpacing: "1.5px",
+          lineHeight: 1.5,
+        }}
+      >
+        Pure Tradition, Naturally
+      </span>
+
+      <div className="h-[2px] w-5 sm:w-8 shrink-0 bg-[#E7C56D]" />
+
+    </div>
+  </div>
+
+  {/* Brand Description */}
+  <p className="max-w-md text-[13px] sm:text-sm text-emerald-50/85 leading-7">
+    Reviving India's traditional cold &amp; wood-pressing
+    heritage. We bring pure, thoughtfully made edible oils,
+    organic jaggery and Vedic A2 ghee to conscious kitchens.
+  </p>
+
+  {/* Contact Information */}
+  <div className="mt-7 space-y-5">
+
+    {/* Address */}
+    <div className="group flex items-start gap-3">
+
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E7C56D]/20 bg-white/10 transition-colors group-hover:bg-white/15">
+        <MapPin className="h-4 w-4 text-[#E7C56D]" />
+      </div>
+
+      <div className="text-xs sm:text-[13px] leading-6 text-emerald-50/85">
+        <p className="font-semibold text-white">
+          ShreeKrishna Organics Pvt Ltd
+        </p>
+        <p>Karad, Maharashtra - 415110</p>
+      </div>
+
+    </div>
+
+    {/* Phone */}
+    <div className="group flex items-start gap-3">
+
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E7C56D]/20 bg-white/10 transition-colors group-hover:bg-white/15">
+        <Phone className="h-4 w-4 text-[#E7C56D]" />
+      </div>
+
+      <div className="text-xs sm:text-[13px] leading-6">
+
+        <a
+          href="tel:+919876543210"
+          className="font-medium text-white transition-colors hover:text-[#E7C56D]"
+        >
+          +91 98765 43210
+        </a>
+
+        <p className="text-emerald-100/60">
+          Mon–Sat, 9am–7pm
+        </p>
+
+      </div>
+    </div>
+
+    {/* Email */}
+    <div className="group flex items-start gap-3">
+
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E7C56D]/20 bg-white/10 transition-colors group-hover:bg-white/15">
+        <Mail className="h-4 w-4 text-[#E7C56D]" />
+      </div>
+
+      <a
+        href="mailto:care@shreekrishnaorganics.com"
+        className="min-w-0 break-all pt-2 text-xs sm:text-[13px] text-emerald-50/85 transition-colors hover:text-[#E7C56D]"
+      >
+        care@shreekrishnaorganics.com
+      </a>
+
+    </div>
+  </div>
+</div>
+{/* ================= END BRAND SECTION ================= */}
+
 
               {/* Services */}
               <div className="lg:col-span-2">
