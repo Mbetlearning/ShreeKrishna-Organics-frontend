@@ -12,6 +12,7 @@ import { useAuth } from './AuthContext';
 import { cartApi } from '../services/cartApi';
 import { normalizeRole } from '../services/authService';
 import { productService } from '../services/productService';
+import { readGuestCart, writeGuestCart, guestItemFromProduct, mergeGuestCartIntoCustomer } from '../services/guestCart';
 const CartContext = createContext(null);
 
 // Convert backend cart item into the format used by Cart.jsx.
@@ -105,7 +106,7 @@ export function CartProvider({ children }) {
     ? String(user.id ?? user.email ?? '')
     : '';
 
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => readGuestCart());
   const [cartLoading, setCartLoading] = useState(false);
   const [cartError, setCartError] = useState(null);
   const [cartBusy, setCartBusy] = useState(false);
@@ -145,7 +146,7 @@ const applyCartResponse = async (response, generation) => {
   useEffect(() => {
     const generation = ++generationRef.current;
 
-    setCartItems([]);
+    setCartItems(isCustomer ? [] : readGuestCart());
     setAppliedCoupon(null);
     setCartError(null);
     setCartBusy(false);
@@ -214,17 +215,36 @@ const applyCartResponse = async (response, generation) => {
     }
   };
 
+  // Guest operations never call authenticated cart APIs.
+  const mutateGuest = (modifier, message) => {
+    try {
+      const updated = modifier(readGuestCart());
+      writeGuestCart(updated);
+      setCartItems(updated);
+      setCartError(null);
+      if (message) addToast(message);
+      return true;
+    } catch (error) {
+      const message = error?.message || 'Unable to save guest cart.';
+      setCartError(message);
+      addToast(message, 'error');
+      return false;
+    }
+  };
+
+  const mergeGuestCart = async () => {
+    if (!isCustomer) throw new Error('Please verify your mobile number first.');
+    await mergeGuestCartIntoCustomer(user.id ?? user.mobile ?? user.email);
+    return refreshCart();
+  };
+
   // Shared handler for cart modification requests.
   const performMutation = async (
     request,
     successMessage = null
   ) => {
     if (!isCustomer) {
-      addToast(
-        'Please sign in as a customer to use your cart.',
-        'error'
-      );
-      return false;
+      return false; // Guest mutations use local storage, not this backend helper.
     }
 
     if (busyRef.current || cartLoading) {
@@ -304,6 +324,18 @@ const applyCartResponse = async (response, generation) => {
       return false;
     }
 
+    if (!isCustomer) {
+      return mutateGuest((items) => {
+        const found = items.find(item => item.variantId === variantId);
+        if (found) {
+          const updated = found.quantity + validQuantity;
+          if (updated > 99) throw new Error('Maximum 99 units per product.');
+          return items.map(item => item.variantId === variantId ? {...item, quantity: updated} : item);
+        }
+        return [...items, guestItemFromProduct(product, size, validQuantity)];
+      }, `${product.name} added to cart`);
+    }
+
     return performMutation(
       () => cartApi.addItem(variantId, validQuantity),
       `${product.name} added to cart`
@@ -326,6 +358,11 @@ const applyCartResponse = async (response, generation) => {
       return false;
     }
 
+    if (!isCustomer) {
+      if (newQty > 99) return false;
+      return mutateGuest(items => items.map(item =>
+        String(item.cartItemId) === String(cartItemId) ? {...item, quantity: newQty} : item));
+    }
     return performMutation(
       () => cartApi.updateItem(cartItemId, newQty)
     );
@@ -333,6 +370,8 @@ const applyCartResponse = async (response, generation) => {
 
   // DELETE /api/v1/cart/items/{itemId}
   const removeFromCart = async (cartItemId) => {
+    if (!isCustomer) return mutateGuest(items => items.filter(item =>
+      String(item.cartItemId) !== String(cartItemId)), 'Item removed from cart');
     return performMutation(
       () => cartApi.removeItem(cartItemId),
       'Item removed from cart'
@@ -341,6 +380,7 @@ const applyCartResponse = async (response, generation) => {
 
   // DELETE /api/v1/cart
   const clearCart = async () => {
+    if (!isCustomer) return mutateGuest(() => [], 'Cart cleared');
     const success = await performMutation(
       () => cartApi.clearCart(),
       'Cart cleared'
@@ -467,6 +507,7 @@ const applyCartResponse = async (response, generation) => {
         cartError,
         cartBusy,
         refreshCart,
+        mergeGuestCart,
         addToCart,
         updateQuantity,
         removeFromCart,

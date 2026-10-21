@@ -62,6 +62,7 @@ import AdminTestimonials from "./admin/pages/AdminTestimonials";
 
 /* PROTECTED ROUTE */
 import ProtectedRoute from "./components/ProtectedRoute";
+import CheckoutGate from "./components/CheckoutGate";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -97,7 +98,7 @@ function WebsiteLayout() {
           {/* SHOPPING */}
           <Route path="/product/:slug" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout" element={<CheckoutGate />} />
 
           {/* CUSTOMER ACCOUNT */}
           <Route path="/login" element={<Login />} />

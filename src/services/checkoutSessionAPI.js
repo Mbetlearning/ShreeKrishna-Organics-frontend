@@ -13,6 +13,21 @@ export const checkoutSessionApi = {
       }),
     }),
 
+  createBuyNowDraft: (addressId, variantId, quantity) =>
+    apiRequest('/checkout-sessions/buy-now/draft', {
+      method: 'POST',
+      body: JSON.stringify({
+        addressId: Number(addressId),
+        variantId: Number(variantId),
+        quantity: Number(quantity),
+      }),
+    }),
+
+  placeBuyNowCod: (id) =>
+    apiRequest(`/checkout-sessions/${encodeURIComponent(id)}/buy-now-cod`, {
+      method: 'POST',
+    }),
+
   startPayment: (id) =>
     apiRequest(
       `/checkout-sessions/${encodeURIComponent(id)}/start-payment`,
