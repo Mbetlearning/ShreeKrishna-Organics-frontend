@@ -2,6 +2,13 @@
 const KEY = 'sko_buy_now_intent_v1';
 const MAX_QTY = 100;
 
+// Preview metadata only. The backend always recalculates the actual payable amount.
+function previewAmount(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
 export function saveBuyNowIntent(product, variant, quantity) {
   const variantId = Number(variant?.variantId);
   const qty = Number(quantity);
@@ -14,6 +21,9 @@ export function saveBuyNowIntent(product, variant, quantity) {
     productName: String(product?.name || 'Product'),
     image: product?.image || '',
     slug: product?.slug || '',
+    size: variant?.size || [variant?.sizeValue, variant?.sizeUnit].filter(Boolean).join(' '),
+    price: previewAmount(variant?.price ?? product?.price),
+    mrp: previewAmount(variant?.mrp ?? variant?.originalPrice ?? product?.originalPrice),
   };
   sessionStorage.setItem(KEY, JSON.stringify(intent));
   return intent;

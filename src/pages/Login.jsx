@@ -1,9 +1,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Phone, ShieldCheck, Loader2 } from 'lucide-react';
+import { Phone, ShieldCheck, Loader2, ChevronDown, ChevronUp, LockKeyhole, ShoppingBag, ArrowLeft, Truck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+import { useCart } from '../context/CartContext';
+import { getBuyNowIntent } from '../services/buyNowIntent';
 
 const MSG91_WIDGET_ID = '366a7369364c373236343039';
 
@@ -87,8 +89,76 @@ function extractAccessToken(data) {
   return typeof token === 'string' ? token.trim() : '';
 }
 
+const formatPrice = (value) => `₹${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const positivePrice = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+function CheckoutOrderSummary({ mode, items }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasItems = items.length > 0;
+  const pricedItems = hasItems && items.every((item) => item.unitPrice !== null);
+  const subtotal = items.reduce((sum, item) => sum + (item.unitPrice ?? 0) * item.quantity, 0);
+  const savings = items.reduce((sum, item) => {
+    if (item.unitPrice === null || item.mrp === null) return sum;
+    return sum + Math.max(0, item.mrp - item.unitPrice) * item.quantity;
+  }, 0);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#E1D5C5] bg-white shadow-sm" aria-label="Checkout order summary">
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        aria-expanded={expanded}
+        aria-controls="checkout-login-order-detail"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left sm:px-5 sm:py-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#086652]"
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#E9F3EB] text-[#00634F]"><ShoppingBag className="h-5 w-5" /></span>
+          <span className="min-w-0">
+            <span className="block font-serif text-base font-bold text-[#2B241D] sm:text-lg">Order Summary ({itemCount} {itemCount === 1 ? 'Item' : 'Items'})</span>
+            <span className="block text-[11px] text-stone-500">{mode === 'BUY_NOW' ? 'Buy Now · Selected product only' : 'Your shopping cart'} · Tap to {expanded ? 'hide' : 'view'} details</span>
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2 text-right">
+          <span>
+            <span className="block text-sm font-extrabold text-[#075E4C] sm:text-base">{pricedItems ? formatPrice(subtotal) : 'Price confirmed at checkout'}</span>
+            {savings > 0 && <span className="block text-[11px] font-semibold text-[#B5563C]">Save {formatPrice(savings)}</span>}
+          </span>
+          {expanded ? <ChevronUp className="h-4 w-4 text-[#00634F]" /> : <ChevronDown className="h-4 w-4 text-[#00634F]" />}
+        </span>
+      </button>
+      {expanded && (
+        <div id="checkout-login-order-detail" className="border-t border-[#E8DFD3] bg-[#FFFCF7] px-4 py-3 sm:px-5">
+          {hasItems ? <div className="space-y-4">
+            {items.map((item, index) => <div key={`${item.variantId || 'item'}-${index}`} className="flex items-start gap-3">
+              {item.image ? <img src={item.image} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-[#E8DFD3] object-cover" /> : <div className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-[#EEE8DF] text-[#00634F]"><ShoppingBag className="h-5 w-5" /></div>}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-[#2B241D]">{item.name}</p>
+                {item.size && <p className="text-xs text-stone-500">{item.size}</p>}
+                <p className="text-xs text-stone-500">Qty: {item.quantity}</p>
+              </div>
+              <span className="shrink-0 text-sm font-semibold text-[#2B241D]">{item.unitPrice !== null ? formatPrice(item.unitPrice * item.quantity) : 'Price at checkout'}</span>
+            </div>)}
+            {pricedItems && <div className="space-y-2 border-t border-[#E8DFD3] pt-3 text-sm">
+              <div className="flex justify-between"><span className="text-stone-600">Estimated products total</span><span className="font-semibold text-[#2B241D]">{formatPrice(subtotal)}</span></div>
+              {savings > 0 && <div className="flex justify-between text-[#0B7956]"><span>Product savings</span><span className="font-bold">{formatPrice(savings)}</span></div>}
+            </div>}
+            <div className="flex gap-2 rounded-lg bg-[#E9F3EB] px-3 py-2 text-xs leading-relaxed text-[#285E50]"><Truck className="mt-0.5 h-4 w-4 shrink-0" />Final delivery fees, taxes and payment charges are confirmed at checkout after your address is selected.</div>
+          </div> : <p className="text-sm text-stone-600">Your selected products will be confirmed during checkout.</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Login() {
   const { loginWithOtp, loading } = useAuth();
+  const { cartItems } = useCart();
 
   const [mobile, setMobile] = useState('');
   const [error, setError] = useState('');
@@ -257,111 +327,77 @@ export default function Login() {
     }
   };
 
+  const checkoutPath = safeRedirect.split(/[?#]/)[0] === '/checkout';
+  const isBuyNow = checkoutPath && new URLSearchParams(safeRedirect.split('?')[1] || '').get('mode') === 'buy-now';
+  const buyNow = isBuyNow ? getBuyNowIntent() : null;
+  const summaryItems = isBuyNow
+    ? buyNow ? [{
+        variantId: buyNow.variantId,
+        name: buyNow.productName || buyNow.name || 'Selected product',
+        size: buyNow.size || '', image: buyNow.image || '',
+        quantity: Number(buyNow.quantity) > 0 ? Number(buyNow.quantity) : 1,
+        // Saved Buy Now metadata is only a preview, never an authoritative quote.
+        unitPrice: positivePrice(buyNow.price ?? buyNow.unitPrice),
+        mrp: positivePrice(buyNow.mrp ?? buyNow.originalPrice),
+      }] : []
+    : cartItems.map((item) => ({
+        variantId: item.variantId, name: item.name, size: item.size,
+        image: item.image, quantity: Number(item.quantity || 0),
+        unitPrice: positivePrice(item.price), mrp: positivePrice(item.originalPrice),
+      }));
+
   const busy = processing || loading;
 
   return (
-    <div className="bg-[#FAF6EF] min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-[#E8DFD3] shadow-card space-y-6">
-
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-[#2B241D] text-[#FAF6EF] flex items-center justify-center font-serif font-bold text-lg mx-auto shadow-xs border border-[#B5563C]/30">
-            SK
+    <main className="min-h-[70vh] bg-[#FAF6EF] px-3 py-5 sm:px-6 sm:py-9">
+      <div className={`mx-auto w-full ${checkoutPath ? 'max-w-2xl' : 'max-w-lg'}`}>
+        {checkoutPath && (
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <button type="button" onClick={() => navigate(isBuyNow ? '/shop' : '/cart')} className="inline-flex items-center gap-2 text-sm font-semibold text-[#00634F] hover:underline">
+              <ArrowLeft className="h-4 w-4" /> {isBuyNow ? 'Continue shopping' : 'Return to cart'}
+            </button>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#00634F]"><LockKeyhole className="h-3.5 w-3.5" /> Secure checkout</span>
           </div>
+        )}
+        <header className="mb-4 text-center">
+          <div className="mx-auto mb-2 grid h-10 w-10 place-items-center rounded-2xl bg-[#00634F] font-serif text-lg font-bold text-[#FFF4D7] shadow-sm">SK</div>
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.17em] text-[#00634F]">ShreeKrishna Organics</p>
+          <h1 className="font-serif text-[1.75rem] font-bold tracking-tight text-[#2B241D] sm:text-4xl">{checkoutPath ? 'Continue to Checkout' : 'Welcome to ShreeKrishna'}</h1>
+          <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-stone-600">{checkoutPath ? 'Verify your mobile number to securely continue with your order.' : 'Sign in securely with your mobile number. No password needed.'}</p>
+        </header>
 
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#2B241D]">
-            Welcome to ShreeKrishna
-          </h1>
+        <div className="space-y-3">
+          {checkoutPath && <CheckoutOrderSummary mode={isBuyNow ? 'BUY_NOW' : 'CART'} items={summaryItems} />}
 
-          <p className="text-xs text-stone-500 font-sans">
-            Sign in securely using your mobile number.
-            No password or registration required.
-          </p>
-        </div>
-
-        <form onSubmit={handleSendOtp} className="space-y-4">
-
-          <div>
-            <label
-              htmlFor="login-mobile"
-              className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1"
-            >
-              Mobile Number
-            </label>
-
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-500">
-                <Phone className="w-4 h-4" />
+          <section className="rounded-2xl border border-[#E8DFD3] bg-white px-4 py-5 shadow-sm sm:px-8 sm:py-7">
+            <div className="mb-4">
+              <div className="mb-2 flex items-center gap-2 text-[#00634F]"><Phone className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-wider">Mobile verification</span></div>
+              <h2 className="font-serif text-2xl font-bold text-[#2B241D]">Enter mobile number</h2>
+              <p className="mt-1 text-sm text-stone-500">Provide your mobile number to continue.</p>
+            </div>
+            <form onSubmit={handleSendOtp} className="space-y-3">
+              <div>
+                <label htmlFor="login-mobile" className="mb-2 block text-xs font-bold uppercase tracking-wide text-stone-700">Mobile number</label>
+                <div className="flex overflow-hidden rounded-xl border border-[#DED5C9] bg-[#FAF6EF] transition-colors focus-within:border-[#00634F] focus-within:ring-2 focus-within:ring-[#00634F]/10">
+                  <div className="flex shrink-0 items-center gap-2 border-r border-[#DED5C9] px-3 text-sm font-semibold text-[#2B241D] sm:px-4"><span role="img" aria-label="India">🇮🇳</span><span className="hidden sm:inline">India</span><span>+91</span></div>
+                  <input id="login-mobile" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} required placeholder="10-digit mobile number" value={mobile}
+                    onChange={(event) => { setMobile(event.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); }} disabled={busy}
+                    className="min-w-0 w-full bg-transparent px-4 py-3.5 text-base text-[#2B241D] outline-none placeholder:text-stone-400 disabled:opacity-60" />
+                </div>
+                <p className="mt-2 text-xs text-stone-500">Currently available for Indian mobile numbers.</p>
               </div>
-
-              <span className="absolute inset-y-0 left-10 flex items-center text-sm text-stone-700 font-semibold">
-                +91
-              </span>
-
-              <input
-                id="login-mobile"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                maxLength={10}
-                required
-                placeholder="Enter 10-digit mobile number"
-                value={mobile}
-                onChange={(event) => {
-                  setMobile(
-                    event.target.value.replace(/\D/g, '').slice(0, 10)
-                  );
-                  setError('');
-                }}
-                disabled={busy}
-                className="w-full bg-[#FAF6EF] border border-[#E8DFD3] rounded-xl pl-20 pr-3.5 py-3 text-sm text-stone-900 focus:outline-none focus:border-[#B5563C] disabled:opacity-60"
-              />
+              {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+              {status && <div role="status" className="flex items-center gap-2 rounded-xl border border-[#E8DFD3] bg-[#FAF6EF] px-4 py-3 text-sm text-stone-700"><Loader2 className="h-4 w-4 animate-spin" />{status}</div>}
+              <Button type="submit" variant="primary" size="lg" disabled={busy} className="w-full rounded-xl font-bold shadow-sm">{busy ? 'Please wait...' : 'Send OTP'}</Button>
+            </form>
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#E3EAE1] bg-[#F0F7F0] px-4 py-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#00634F]" />
+              <p className="text-xs leading-relaxed text-[#45645A]">Your mobile number will be verified securely through OTP. No password required. New customers can continue automatically after verification.</p>
             </div>
-          </div>
-
-          {error && (
-            <div
-              role="alert"
-              className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-xs sm:text-sm"
-            >
-              {error}
-            </div>
-          )}
-
-          {status && (
-            <div
-              role="status"
-              className="bg-stone-50 border border-[#E8DFD3] text-stone-700 rounded-xl px-4 py-3 text-xs sm:text-sm flex items-center gap-2"
-            >
-              <Loader2 className="w-4 h-4 animate-spin" />
-              {status}
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            disabled={busy}
-            className="w-full font-bold shadow-md"
-          >
-            {busy ? 'Please Wait...' : 'Send OTP'}
-          </Button>
-        </form>
-
-        <div className="flex items-start gap-3 rounded-xl bg-[#FAF6EF] border border-[#E8DFD3] px-4 py-3">
-          <ShieldCheck className="w-5 h-5 text-[#B5563C] shrink-0" />
-          <p className="text-xs text-stone-600 leading-relaxed">
-            Your mobile number will be verified securely.
-            New customers are registered automatically
-            after successful verification.
-          </p>
+          </section>
         </div>
-
-        <p className="text-center text-[11px] text-stone-400">
-          ShreeKrishna Organics — Connect with Nature
-          and Boost Your Health
-        </p>
+        <p className="mt-4 text-center text-xs text-stone-500">ShreeKrishna Organics · Pure products, thoughtful shopping</p>
       </div>
-    </div>
+    </main>
   );
 }

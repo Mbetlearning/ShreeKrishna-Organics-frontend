@@ -36,7 +36,6 @@ export default function Navbar() {
 
   const topUpdates = [
     "🌿 100% Traditional • Pure • Naturally Made",
-    "🎁 Use Code SHREEKRISHNA10 & Get 10% OFF",
     "✨ Pure Desi Ghee & Wood-Pressed Oils Available Now",
   ];
 
