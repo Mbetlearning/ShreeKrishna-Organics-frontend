@@ -178,7 +178,7 @@ export default function Checkout({ buyNowIntent = null }) {
   const [buyNowDraft, setBuyNowDraft] = useState(null);
   const [buyNowQuoteError, setBuyNowQuoteError] = useState('');
   const [buyNowQuoteLoading, setBuyNowQuoteLoading] = useState(false);
-  const [buyNowQuoteRetry, setBuyNowQuoteRetry] = useState(0);
+  const buyNowQuoteRequestRef = useRef(0);
 
   const [loading, setLoading] = useState(true);
 
@@ -655,36 +655,63 @@ const loadCheckout = async () => {
 
   }, []);
 
-  // Stage 3: creating a CREATED Buy Now draft has no reservation or payment.
-  // It lets the customer review the ACTUAL server-calculated price BEFORE paying.
-  useEffect(() => {
-    if (!isBuyNow || !selectedAddressId) return;
-    let active = true;
+  // A CREATED Buy Now draft is a server-calculated quote, not a payment.
+  // Refresh calls the API directly, rather than relying on a retry state/effect.
+  // The sequence guard prevents an older response from replacing a newer quote.
+  const refreshBuyNowQuote = async () => {
+    if (!isBuyNow || !selectedAddressId || !buyNowIntent) return;
+    // A payment session that may have been captured must be reconciled first.
+    if (pendingSessionId || pendingOrder) {
+      setBuyNowQuoteError('A previous payment needs confirmation. Check its status before creating a new quote.');
+      return;
+    }
+
+    const requestId = ++buyNowQuoteRequestRef.current;
     setBuyNowDraft(null);
     setBuyNowQuoteError('');
     setBuyNowQuoteLoading(true);
-    checkoutSessionApi.createBuyNowDraft(
-      selectedAddressId, buyNowIntent.variantId, buyNowIntent.quantity
-    ).then(draft => {
-      if (!active) return;
-      if (!draft?.id || !draft?.items?.length) throw new Error('Buy Now quote unavailable.');
-      setBuyNowDraft(draft);
+
+    try {
+      const draft = await checkoutSessionApi.createBuyNowDraft(
+        selectedAddressId,
+        buyNowIntent.variantId,
+        buyNowIntent.quantity
+      );
+      if (requestId !== buyNowQuoteRequestRef.current) return;
+      if (!draft?.id || !draft?.items?.length) {
+        throw new Error('Buy Now quote unavailable. Please retry.');
+      }
+
       const subtotal = Number(draft.subtotal || 0);
       const totalAmount = Number(draft.totalAmount || 0);
+      setBuyNowDraft(draft);
       setSummary({
         items: draft.items.map(item => ({ ...item, available: true })),
-        subtotal, totalAmount,
+        subtotal,
+        totalAmount,
         deliveryCharge: Math.max(0, Math.round((totalAmount - subtotal) * 100) / 100),
         taxAmount: 0,
         discountAmount: 0,
       });
-    }).catch(err => {
-      if (active) setBuyNowQuoteError(err.message || 'Unable to calculate Buy Now total.');
-    }).finally(() => {
-      if (active) setBuyNowQuoteLoading(false);
-    });
-    return () => { active = false; };
-  }, [isBuyNow, selectedAddressId, buyNowIntent?.variantId, buyNowIntent?.quantity, buyNowQuoteRetry]);
+    } catch (err) {
+      if (requestId === buyNowQuoteRequestRef.current) {
+        setBuyNowQuoteError(err.message || 'Unable to calculate Buy Now total.');
+      }
+    } finally {
+      if (requestId === buyNowQuoteRequestRef.current) {
+        setBuyNowQuoteLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isBuyNow && selectedAddressId) {
+      refreshBuyNowQuote();
+    }
+    return () => {
+      buyNowQuoteRequestRef.current += 1;
+    };
+  }, [isBuyNow, selectedAddressId, buyNowIntent?.variantId, buyNowIntent?.quantity]);
 
   const activeBuyNowDraft = isBuyNow && buyNowDraft &&
     String(buyNowDraft.addressId) === String(selectedAddressId) &&
@@ -2048,7 +2075,7 @@ const loadCheckout = async () => {
                     buyNowQuoteError || !activeBuyNowDraft ? (
                       <div role="alert" className="text-red-700">
                         <p>{buyNowQuoteError || 'The quote expired. Please refresh to review the final amount.'}</p>
-                        <button type="button" className="underline font-semibold mt-2" onClick={() => setBuyNowQuoteRetry(x => x + 1)}>Refresh Buy Now quote</button>
+                        <button type="button" className="underline font-semibold mt-2 disabled:opacity-50" disabled={buyNowQuoteLoading || submitting || checkingPayment || paymentOpen || Boolean(pendingSessionId) || Boolean(pendingOrder)} onClick={refreshBuyNowQuote}>Refresh Buy Now quote</button>
                       </div>
                     ) : (
                       <>
