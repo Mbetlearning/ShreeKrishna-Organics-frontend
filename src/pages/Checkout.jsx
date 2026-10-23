@@ -681,16 +681,37 @@ const loadCheckout = async () => {
       if (!draft?.id || !draft?.items?.length) {
         throw new Error('Buy Now quote unavailable. Please retry.');
       }
+      // An older backend can still create a valid draft but omit the GST snapshot.
+      // Do not show incorrect zero-GST figures or proceed with an unreviewed breakdown.
+      if (draft.items.some(item =>
+        item.taxAmount === undefined || item.taxAmount === null ||
+        item.gstRate === undefined || item.gstRate === null ||
+        typeof item.priceIncludesGst !== 'boolean'
+      )) {
+        throw new Error('Checkout tax breakdown is unavailable from the backend. Deploy the updated checkout draft API and refresh this quote.');
+      }
 
       const subtotal = Number(draft.subtotal || 0);
       const totalAmount = Number(draft.totalAmount || 0);
+      // Tax values come from the server-side checkout item snapshots.
+      // Amounts are added in paise to avoid floating-point rounding differences.
+      const taxPaise = draft.items.reduce(
+        (sum, item) => sum + Math.round(Number(item.taxAmount || 0) * 100), 0
+      );
+      const inclusiveTaxPaise = draft.items.reduce(
+        (sum, item) => sum + (item.priceIncludesGst === true
+          ? Math.round(Number(item.taxAmount || 0) * 100) : 0), 0
+      );
+      const exclusiveTaxPaise = taxPaise - inclusiveTaxPaise;
       setBuyNowDraft(draft);
       setSummary({
         items: draft.items.map(item => ({ ...item, available: true })),
         subtotal,
         totalAmount,
-        deliveryCharge: Math.max(0, Math.round((totalAmount - subtotal) * 100) / 100),
-        taxAmount: 0,
+        deliveryCharge: Math.max(0, Math.round((totalAmount - subtotal - exclusiveTaxPaise / 100) * 100) / 100),
+        taxAmount: taxPaise / 100,
+        inclusiveTaxAmount: inclusiveTaxPaise / 100,
+        exclusiveTaxAmount: exclusiveTaxPaise / 100,
         discountAmount: 0,
       });
     } catch (err) {
@@ -1320,6 +1341,17 @@ const loadCheckout = async () => {
 
   const cgstRate = effectiveGstRate / 2;
   const sgstRate = effectiveGstRate / 2;
+
+  // Buy Now supports both GST-inclusive and GST-exclusive variants.
+  // Backend-derived tax is never substituted with a hardcoded GST rate.
+  const buyNowInclusiveTaxPaise = Math.round(Number(summary?.inclusiveTaxAmount || 0) * 100);
+  const buyNowExclusiveTaxPaise = Math.round(Number(summary?.exclusiveTaxAmount || 0) * 100);
+  const buyNowTaxPaise = buyNowInclusiveTaxPaise + buyNowExclusiveTaxPaise;
+  const buyNowTaxableAmount = Math.max(0, (Math.round(subtotal * 100) - buyNowInclusiveTaxPaise) / 100);
+  const buyNowCgstPaise = Math.ceil(buyNowTaxPaise / 2);
+  const buyNowSgstPaise = buyNowTaxPaise - buyNowCgstPaise;
+  const buyNowCgstRate = buyNowTaxableAmount > 0
+    ? (buyNowTaxPaise / 100 / buyNowTaxableAmount * 50) : 0;
 
   const fieldClass =
 
@@ -2079,11 +2111,33 @@ const loadCheckout = async () => {
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between"><span>Product subtotal</span><span>{money(summary.subtotal)}</span></div>
-                        <div className="flex justify-between"><span>Delivery and applicable additional taxes</span><span>{money(Number(summary.totalAmount) - Number(summary.subtotal))}</span></div>
-                        {paymentMethod === 'COD' && <div className="flex justify-between"><span>COD charge (5%)</span><span>{money(codCharge)}</span></div>}
+                        <div className="flex justify-between gap-3">
+                          <span>Product Price (Excluding GST)</span>
+                          <span>{money(buyNowTaxableAmount)}</span>
+                        </div>
+                        {buyNowTaxPaise > 0 && (
+                          <>
+                            <div className="flex justify-between gap-3">
+                              <span>CGST ({buyNowCgstRate.toFixed(2)}%) {buyNowExclusiveTaxPaise === 0 ? '— Included' : buyNowInclusiveTaxPaise === 0 ? '— Additional' : '— Included + Additional'}</span>
+                              <span>{money(buyNowCgstPaise / 100)}</span>
+                            </div>
+                            <div className="flex justify-between gap-3">
+                              <span>SGST ({buyNowCgstRate.toFixed(2)}%) {buyNowExclusiveTaxPaise === 0 ? '— Included' : buyNowInclusiveTaxPaise === 0 ? '— Additional' : '— Included + Additional'}</span>
+                              <span>{money(buyNowSgstPaise / 100)}</span>
+                            </div>
+                          </>
+                        )}
+                        <div className="flex justify-between gap-3 border-t border-[#E8DFD3] pt-3 font-semibold">
+                          <span>Product Price (Including GST)</span>
+                          <span>{money(subtotal + buyNowExclusiveTaxPaise / 100)}</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <span>Delivery Charge</span>
+                          <span>{Number(summary.deliveryCharge) === 0 ? 'FREE' : money(summary.deliveryCharge)}</span>
+                        </div>
+                        {paymentMethod === 'COD' && <div className="flex justify-between gap-3"><span>COD Charge (5%)</span><span>{money(codCharge)}</span></div>}
                         <div className="flex justify-between font-bold text-lg border-t pt-3"><span>Total Payable</span><span>{money(payableTotal)}</span></div>
-                        <p className="text-xs text-stone-500">Amounts are calculated by the backend checkout draft. GST included in product prices, if applicable, is not itemized in this draft response.</p>
+                        <p className="text-xs text-green-700">GST amounts come from the server-calculated item snapshots.</p>
                       </>
                     )}
                     <p className="text-xs">Your existing cart items are not included in or removed by this order.</p>
