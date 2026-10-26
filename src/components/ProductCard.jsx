@@ -33,6 +33,9 @@ export default function ProductCard({ product }) {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState(null);
+  const [productImages, setProductImages] = useState([]);
+  // A default size can be selected for pricing without changing the primary image.
+  const [manuallySelectedVariant, setManuallySelectedVariant] = useState(null);
   const [isAdded, setIsAdded] = useState(false);
 const [adding, setAdding] = useState(false);
 const [comboVariantIds, setComboVariantIds] = useState(
@@ -85,6 +88,44 @@ useEffect(() => {
   useEffect(() => {
     setSelectedSize(product.sizes?.find((s) => s.isDefault) ?? product.sizes?.[0] ?? null);
   }, [product]);
+
+  // Reset the clicked-size image whenever this card is used for another product.
+  useEffect(() => {
+    setManuallySelectedVariant(null);
+  }, [product.id]);
+  // Fetch images once for each product; changing size needs no extra request.
+  useEffect(() => {
+    let active = true;
+    setProductImages([]);
+    if (product.id == null) return () => { active = false; };
+
+    apiRequest(`/products/${encodeURIComponent(product.id)}/images`, { auth: false })
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setProductImages(data);
+        }
+      })
+      .catch((error) => console.error('Unable to load variant images:', error));
+
+    return () => { active = false; };
+  }, [product.id]);
+
+  // The primary image comes from the admin-managed images endpoint.
+  // Gallery images and variant images must never become the default card image.
+  const primaryImage = productImages.find(
+    (image) => image.variantId == null && image.primary === true
+  );
+  const defaultImage = primaryImage?.imageUrl || product.image;
+
+  // Only a user's explicit size click switches to a variant image.
+  const selectedVariantImage = productImages.find(
+    (image) =>
+      manuallySelectedVariant?.productId === product.id &&
+      image.variantId != null &&
+      String(image.variantId) === String(manuallySelectedVariant.variantId)
+  );
+  const displayedImage = selectedVariantImage?.imageUrl || defaultImage;
+
   const regularPrice = selectedSize?.regularPrice ?? product.price;
   const currentPrice = selectedSize?.price ?? product.price;
   const currentMrp = selectedSize?.mrp ?? product.originalPrice;
@@ -138,8 +179,8 @@ useEffect(() => {
   return (
     <div className="group relative flex flex-col w-full h-full min-w-0 bg-white rounded-2xl overflow-hidden border border-[#E8DFD3] shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <Link to={`/product/${product.slug}`} className="relative block w-full h-[270px] sm:h-[310px] overflow-hidden bg-[#FAF6EF]">
-        {product.image ? (
-          <img src={product.image} alt={product.name} loading="lazy" className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
+        {displayedImage ? (
+          <img src={displayedImage} alt={product.name} loading="lazy" className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-stone-400 text-sm">Image not available</div>
         )}
@@ -183,7 +224,13 @@ useEffect(() => {
             <span className="text-[11px] font-semibold text-stone-500 block mb-1.5">Select Size:</span>
             <div className="flex flex-wrap gap-1.5">
               {product.sizes.map((s) => (
-                <button key={s.variantId} type="button" onClick={() => setSelectedSize(s)}
+                <button key={s.variantId} type="button" onClick={() => {
+                    setSelectedSize(s);
+                    setManuallySelectedVariant({
+                      productId: product.id,
+                      variantId: s.variantId,
+                    });
+                  }}
                   className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${selectedSize?.variantId === s.variantId ? 'bg-[#2B241D] text-white' : 'bg-[#FAF6EF] text-stone-700 hover:bg-[#ECE4D8] border border-[#E8DFD3]'}`}>
                   {s.size}
                 </button>

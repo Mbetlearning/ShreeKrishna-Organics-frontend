@@ -1,4 +1,3 @@
-
 import {
   getValidToken,
   clearAuthSession,
@@ -10,8 +9,7 @@ import {
 const API_BASE = (
   import.meta.env.VITE_API_URL ||
   "http://localhost:8080/api/v1"
-)
-  .replace(/\/+$/, "");
+).replace(/\/+$/, "");
 
 async function productRequest(endpoint, options = {}) {
   const token = getValidToken();
@@ -100,12 +98,10 @@ export const adminProductService = {
   // CATEGORY APIs
   // =========================
 
-  // GET /api/categories
   getCategories() {
     return productRequest("/categories");
   },
 
-  // GET /api/categories/{id}
   getCategoryById(id) {
     return productRequest(`/categories/${id}`);
   },
@@ -114,29 +110,24 @@ export const adminProductService = {
   // PRODUCT APIs
   // =========================
 
-  // GET /api/products
   getAll() {
     return productRequest("/products");
   },
 
-  // GET /api/products/{id}
   getById(id) {
     return productRequest(`/products/${id}`);
   },
 
-  // GET /api/products/featured
   getFeatured() {
     return productRequest("/products/featured");
   },
 
-  // GET /api/products/category/{categoryId}
   getByCategory(categoryId) {
     return productRequest(
       `/products/category/${categoryId}`
     );
   },
 
-  // POST /api/admin/products
   create(data) {
     return productRequest("/admin/products", {
       method: "POST",
@@ -144,7 +135,6 @@ export const adminProductService = {
     });
   },
 
-  // PUT /api/admin/products/{id}
   update(id, data) {
     return productRequest(`/admin/products/${id}`, {
       method: "PUT",
@@ -152,7 +142,6 @@ export const adminProductService = {
     });
   },
 
-  // DELETE /api/admin/products/{id}
   delete(id) {
     return productRequest(`/admin/products/${id}`, {
       method: "DELETE",
@@ -163,17 +152,33 @@ export const adminProductService = {
   // PRODUCT IMAGE APIs
   // =========================
 
-  // GET /api/products/{productId}/images
+  // Get normal and variant-specific images.
+  // Response includes variantId.
   getImages(productId) {
     return productRequest(
       `/products/${productId}/images`
     );
   },
 
-  // POST /api/admin/products/{productId}/images
-  uploadImage(productId, file) {
+  /*
+   * Upload normal product image OR variant image.
+   *
+   * Normal image:
+   * uploadImage(productId, file)
+   *
+   * Variant image:
+   * uploadImage(productId, file, variantId)
+   *
+   * Backend handles replacing existing variant images.
+   */
+  uploadImage(productId, file, variantId = null) {
     const formData = new FormData();
+
     formData.append("file", file);
+
+    if (variantId !== null && variantId !== undefined) {
+      formData.append("variantId", String(variantId));
+    }
 
     return productRequest(
       `/admin/products/${productId}/images`,
@@ -184,7 +189,8 @@ export const adminProductService = {
     );
   },
 
-  // PATCH /api/admin/products/{productId}/images/{imageId}/primary
+  // Set primary image.
+  // Backend allows only normal product images.
   setPrimaryImage(productId, imageId) {
     return productRequest(
       `/admin/products/${productId}/images/${imageId}/primary`,
@@ -194,7 +200,7 @@ export const adminProductService = {
     );
   },
 
-  // DELETE /api/admin/products/{productId}/images/{imageId}
+  // Delete normal or variant-specific image.
   deleteImage(productId, imageId) {
     return productRequest(
       `/admin/products/${productId}/images/${imageId}`,
@@ -208,14 +214,12 @@ export const adminProductService = {
   // PRODUCT VARIANT APIs
   // =========================
 
-  // GET /api/products/{productId}/variants
   getVariants(productId) {
     return productRequest(
       `/products/${productId}/variants`
     );
   },
 
-  // POST /api/admin/product-variants
   createVariant(data) {
     return productRequest(
       "/admin/product-variants",
@@ -226,7 +230,6 @@ export const adminProductService = {
     );
   },
 
-  // PUT /api/admin/product-variants/{id}
   updateVariant(id, data) {
     return productRequest(
       `/admin/product-variants/${id}`,
@@ -237,7 +240,6 @@ export const adminProductService = {
     );
   },
 
-  // DELETE /api/admin/product-variants/{id}
   deleteVariant(id) {
     return productRequest(
       `/admin/product-variants/${id}`,

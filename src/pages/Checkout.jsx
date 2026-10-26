@@ -674,9 +674,12 @@ const loadCheckout = async () => {
       setSummary({
         items: draft.items.map(item => ({ ...item, available: true })),
         subtotal, totalAmount,
-        deliveryCharge: Math.max(0, Math.round((totalAmount - subtotal) * 100) / 100),
-        taxAmount: 0,
-        discountAmount: 0,
+        // Only itemize amounts explicitly supplied by the backend.
+        deliveryCharge: draft.deliveryCharge == null ? null : Number(draft.deliveryCharge),
+        taxAmount: draft.taxAmount == null ? null : Number(draft.taxAmount),
+        includedTaxAmount: draft.includedTaxAmount == null ? null : Number(draft.includedTaxAmount),
+        additionalTax: draft.additionalTax == null ? null : Number(draft.additionalTax),
+        discountAmount: draft.discountAmount == null ? null : Number(draft.discountAmount),
       });
     }).catch(err => {
       if (active) setBuyNowQuoteError(err.message || 'Unable to calculate Buy Now total.');
@@ -2052,11 +2055,55 @@ const loadCheckout = async () => {
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between"><span>Product subtotal</span><span>{money(summary.subtotal)}</span></div>
-                        <div className="flex justify-between"><span>Delivery and applicable additional taxes</span><span>{money(Number(summary.totalAmount) - Number(summary.subtotal))}</span></div>
+                        {summary.taxAmount != null && summary.includedTaxAmount != null && summary.additionalTax != null ? (
+                          <>
+                            {(() => {
+                              const includedPaise = Math.round(Number(summary.includedTaxAmount) * 100);
+                              const exclusivePaise = Math.round(Number(summary.additionalTax) * 100);
+                              const basePrice = Math.max(0, subtotal - includedPaise / 100);
+                              const includedCgst = Math.ceil(includedPaise / 2);
+                              const exclusiveCgst = Math.ceil(exclusivePaise / 2);
+                              return (
+                                <>
+                                  <div className="flex justify-between"><span>Product Price (Excluding Included GST)</span><span>{money(basePrice)}</span></div>
+                                  {includedPaise > 0 && (
+                                    <>
+                                      <div className="flex justify-between"><span>CGST — Included</span><span>{money(includedCgst / 100)}</span></div>
+                                      <div className="flex justify-between"><span>SGST — Included</span><span>{money((includedPaise - includedCgst) / 100)}</span></div>
+                                    </>
+                                  )}
+                                  <div className="flex justify-between font-semibold"><span>Product Subtotal</span><span>{money(summary.subtotal)}</span></div>
+                                  {exclusivePaise > 0 && (
+                                    <>
+                                      <div className="flex justify-between"><span>CGST — Additional</span><span>{money(exclusiveCgst / 100)}</span></div>
+                                      <div className="flex justify-between"><span>SGST — Additional</span><span>{money((exclusivePaise - exclusiveCgst) / 100)}</span></div>
+                                    </>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </>
+                        ) : (
+                          <div className="flex justify-between"><span>Product subtotal (GST breakdown unavailable)</span><span>{money(summary.subtotal)}</span></div>
+                        )}
+                        {summary.deliveryCharge != null && (
+                          <div className="flex justify-between"><span>Delivery Charge</span><span>{Number(summary.deliveryCharge) === 0 ? 'FREE' : money(summary.deliveryCharge)}</span></div>
+                        )}
+                        {Number(summary.discountAmount || 0) > 0 && (
+                          <div className="flex justify-between"><span>Discount</span><span>-{money(summary.discountAmount)}</span></div>
+                        )}
+                        {(() => {
+                          const knownAdjustment =
+                            (Number(summary.deliveryCharge) || 0) + (Number(summary.additionalTax) || 0) - (Number(summary.discountAmount) || 0);
+                          const remainder = Math.round((Number(summary.totalAmount) - Number(summary.subtotal) - knownAdjustment) * 100) / 100;
+                          return Math.abs(remainder) >= 0.01 ? (
+                            <div className="flex justify-between"><span>Other charges / adjustments (not itemized by server)</span><span>{money(remainder)}</span></div>
+                          ) : null;
+                        })()}
                         {paymentMethod === 'COD' && <div className="flex justify-between"><span>COD charge (5%)</span><span>{money(codCharge)}</span></div>}
                         <div className="flex justify-between font-bold text-lg border-t pt-3"><span>Total Payable</span><span>{money(payableTotal)}</span></div>
-                        <p className="text-xs text-stone-500">Amounts are calculated by the backend checkout draft. GST included in product prices, if applicable, is not itemized in this draft response.</p>
+                        {(summary.taxAmount == null || summary.includedTaxAmount == null || summary.additionalTax == null) && <p className="text-xs text-amber-700">The Buy Now API has not supplied GST details. CGST/SGST cannot be calculated reliably from the total alone.</p>}
+                        <p className="text-xs text-stone-500">All payable amounts come from the backend quote; GST is not added again to the total.</p>
                       </>
                     )}
                     <p className="text-xs">Your existing cart items are not included in or removed by this order.</p>
