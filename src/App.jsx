@@ -56,6 +56,7 @@ import AdminReviews from "./admin/pages/AdminReviews";
 import AdminSettings from "./admin/pages/AdminSettings";
 import AdminHotDeals from "./admin/pages/AdminHotDeals";
 import AdminComboOffers from "./admin/pages/AdminComboOffers";
+import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
 
 /* WEBSITE TESTIMONIALS */
 import AdminTestimonials from "./admin/pages/AdminTestimonials";
@@ -111,9 +112,11 @@ function WebsiteLayout() {
 
           {/* NOT FOUND */}
           <Route path="*" element={<NotFound />} />
+         
         </Routes>
       </main>
       <Footer />
+       <WhatsAppFloatingButton />
     </div>
   );
 }

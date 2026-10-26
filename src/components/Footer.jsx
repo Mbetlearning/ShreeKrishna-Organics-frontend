@@ -145,7 +145,7 @@ export default function Footer() {
 
       <div className="text-xs sm:text-[13px] leading-6 text-emerald-50/85">
         <p className="font-semibold text-white">
-          ShreeKrishna Organics Pvt Ltd
+          ShreeKrishna Organics 
         </p>
         <p>Karad, Maharashtra - 415110</p>
       </div>
@@ -162,10 +162,10 @@ export default function Footer() {
       <div className="text-xs sm:text-[13px] leading-6">
 
         <a
-          href="tel:+919876543210"
+          href="tel:+919011087310"
           className="font-medium text-white transition-colors hover:text-[#E7C56D]"
         >
-          +91 98765 43210
+          +91 9011087310
         </a>
 
         <p className="text-emerald-100/60">
