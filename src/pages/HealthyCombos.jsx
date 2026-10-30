@@ -968,7 +968,7 @@ export default function HealthyCombos() {
 
               Shop convenient combinations of your favourite
 
-              ShreeKrishna Organics products.
+              Shreekrishna Organics products.
 
             </p>
 
@@ -1883,7 +1883,7 @@ export default function HealthyCombos() {
 
             >
 
-              ShreeKrishna Organics
+              Shreekrishna Organics
 
             </span>
 
@@ -2207,7 +2207,7 @@ export default function HealthyCombos() {
 
               >
 
-                Explore ShreeKrishna Organics combo packs and discover
+                Explore Shreekrishna Organics combo packs and discover
 
                 convenient combinations for your kitchen.
 

@@ -185,7 +185,7 @@ export default function Shop() {
 
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#2B241D]">
 
-            ShreeKrishna Organics Collection
+            Shreekrishna Organics Collection
 
           </h1>
 

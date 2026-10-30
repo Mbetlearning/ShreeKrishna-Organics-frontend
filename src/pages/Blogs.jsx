@@ -192,7 +192,7 @@ export default function Blogs() {
                 leading-tight
               "
             >
-              ShreeKrishna
+              Shreekrishna
               <span className="text-[#F0CF70]">
                 {" "}
                 Blogs
@@ -741,7 +741,7 @@ export default function Blogs() {
                 tracking-[0.18em]
               "
             >
-              ShreeKrishna Journal
+              Shreekrishna Journal
             </p>
 
             <h2
@@ -972,7 +972,7 @@ export default function Blogs() {
               font-bold
             "
           >
-            Discover More from ShreeKrishna
+            Discover More from Shreekrishna
           </h2>
 
           <p
@@ -986,7 +986,7 @@ export default function Blogs() {
               text-white/75
             "
           >
-            Explore our latest articles, ingredient stories and traditional food wisdom from ShreeKrishna Organics.
+            Explore our latest articles, ingredient stories and traditional food wisdom from Shreekrishna Organics.
           </p>
 
 

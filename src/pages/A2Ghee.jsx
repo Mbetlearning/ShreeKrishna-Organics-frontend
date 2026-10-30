@@ -240,7 +240,7 @@ export default function A2Ghee() {
 
               <span className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.17em] text-[#755018]">
 
-                ShreeKrishna Organics
+                Shreekrishna Organics
 
               </span>
 
