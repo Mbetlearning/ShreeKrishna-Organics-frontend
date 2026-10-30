@@ -179,7 +179,7 @@ export default function Shop() {
 
             <Sparkles className="w-3.5 h-3.5 text-[#B5563C]" />
 
-            100% Certified Organic & Unrefined
+            100% Organic & Unrefined
 
           </span>
 

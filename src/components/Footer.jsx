@@ -186,7 +186,7 @@ export default function Footer() {
         href="mailto:care@shreekrishnaorganics.com"
         className="min-w-0 break-all pt-2 text-xs sm:text-[13px] text-emerald-50/85 transition-colors hover:text-[#E7C56D]"
       >
-        care@shreekrishnaorganics.com
+        shreekrishnaorganics.com
       </a>
 
     </div>
@@ -253,12 +253,12 @@ export default function Footer() {
           <div className="border-t border-white/15 bg-[#004b3f]/35">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col lg:flex-row items-center justify-between gap-3 text-[11px] sm:text-xs text-emerald-50/75">
               <p className="text-center lg:text-left">
-                © 2026 ShreeKrishna Organics Pvt Ltd. Pure Tradition, Naturally.
+                © 2026 ShreeKrishna Organics Pure Tradition, Naturally.
               </p>
               <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
-                <span>FSSAI Lic. No: 10020042000123</span>
+                <span>FSSAI Lic. No: 21519193000515</span>
                 <span className="text-[#E7C56D]">•</span>
-                <span>100% Certified Organic</span>
+                <span>100% Natural And Cold Presse</span>
                 <span className="text-[#E7C56D]">•</span>
                 <span>Made in Bharat</span>
               </div>
@@ -294,7 +294,7 @@ export default function Footer() {
                 <h4 className="font-bold text-sm text-[#2B241D] flex items-center gap-2">
                   <Phone className="w-4 h-4 text-[#B5563C]" /> Instant Phone & WhatsApp
                 </h4>
-                <p className="mt-1 text-stone-600">Call <strong>+91 98765 43210</strong> (Mon–Sat, 9am–7pm) for live assistance from our oil specialists.</p>
+                <p className="mt-1 text-stone-600">Call <strong>+91 9011087310</strong> (Mon–Sat, 9am–7pm) for live assistance from our oil specialists.</p>
               </div>
 
               <div className="p-3.5 bg-white rounded-2xl border border-[#E8DFD3]">
@@ -308,7 +308,7 @@ export default function Footer() {
                 <h4 className="font-bold text-sm text-[#2B241D] flex items-center gap-2">
                   <Mail className="w-4 h-4 text-[#B5563C]" /> Email Customer Care
                 </h4>
-                <p className="mt-1 text-stone-600">Write to <strong>care@shreekrishnaorganics.com</strong> for bulk orders or test reports. Replies within 12h.</p>
+                <p className="mt-1 text-stone-600">Write to <strong>shreekrishnaorganics.com</strong> for bulk orders or test reports. Replies within 12h.</p>
               </div>
             </div>
 
