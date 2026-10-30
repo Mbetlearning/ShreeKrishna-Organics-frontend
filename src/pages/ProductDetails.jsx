@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { getProductReviews, getReviewSummary } from '../services/reviewApi';
 import ProductReviews from '../components/ProductReviews';
 import ProductIngredientsSlider from '../components/ProductIngredientsSlider';
+import ProductGallery from '../components/ProductGallery';
 import { saveBuyNowIntent } from '../services/buyNowIntent';
 
 export default function ProductDetails() {
@@ -23,6 +24,7 @@ export default function ProductDetails() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [galleryPaused, setGalleryPaused] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [variantChosen, setVariantChosen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,6 +37,7 @@ export default function ProductDetails() {
       setError('');
       setProduct(null);
       setActiveImageIndex(0);
+      setVariantChosen(false);
       setRelatedProducts([]);
       window.scrollTo(0, 0);
       try {
@@ -70,22 +73,31 @@ export default function ProductDetails() {
     return () => { cancelled = true; };
   }, [slug]);
 
-  const variantImage = productImages.find(
-    (image) => image.variantId != null && String(image.variantId) === String(selectedSize?.variantId)
+  // Gallery photos never enter the main slider. Match the selected size to its variant ID.
+  const selectedVariantId = selectedSize?.variantId ?? selectedSize?.id;
+  const primaryImage = productImages.find(
+    (image) => image?.imageUrl && image.variantId == null && image.primary
   );
-  const primaryImage = productImages.find((image) => image.variantId == null && image.primary);
-  const heroImageUrl = variantImage?.imageUrl || primaryImage?.imageUrl || product?.image || '';
-  const galleryImages = productImages
-    .filter((image) => image?.imageUrl && image.variantId == null && !image.primary)
-    .slice(0, 4);
-  const slides = [
-    ...(heroImageUrl ? [{ key: 'main', imageUrl: heroImageUrl, label: `${product?.name || 'Product'} - ${selectedSize?.size || 'Main image'}` }] : []),
-    ...galleryImages.map((image, index) => ({
-      key: `gallery-${image.id ?? index}`,
+  const mainImageUrl = primaryImage?.imageUrl || product?.image || '';
+  const selectedVariantImages = productImages
+    .filter((image) => image?.imageUrl && image.variantId != null && selectedVariantId != null &&
+      String(image.variantId) === String(selectedVariantId))
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+
+  // A size click shows its image immediately; the primary photo remains accessible by arrows.
+  const primarySlide = mainImageUrl
+    ? [{ key: 'primary', imageUrl: mainImageUrl, label: `${product?.name || 'Product'} main image` }]
+    : [];
+  const variantSlides = selectedVariantImages
+    .filter((image) => image.imageUrl !== mainImageUrl)
+    .map((image, index) => ({
+      key: `variant-${image.id ?? index}`,
       imageUrl: image.imageUrl,
-      label: `${product?.name || 'Product'} gallery image ${index + 1}`,
-    })),
-  ];
+      label: `${product?.name || 'Product'} ${selectedSize?.size || ''} variant image ${index + 1}`,
+    }));
+  const slides = variantChosen && variantSlides.length
+    ? [...variantSlides, ...primarySlide]
+    : [...primarySlide, ...variantSlides];
 
   useEffect(() => {
     if (galleryPaused || slides.length < 2) return undefined;
@@ -242,7 +254,7 @@ export default function ProductDetails() {
                     <div className="flex justify-between mb-2 text-xs font-bold text-stone-700 uppercase">Available Sizes <span className="normal-case font-medium">Selected: {selectedSize?.size}</span></div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {product.sizes.map(s => (
-                        <button key={s.variantId} type="button" onClick={() => { setSelectedSize(s); setActiveImageIndex(0); }}
+                        <button key={s.variantId} type="button" onClick={() => { setSelectedSize(s); setVariantChosen(true); setActiveImageIndex(0); }}
                           className={`p-3 rounded-xl border text-left transition-all ${selectedSize?.variantId === s.variantId ? 'border-[#B5563C] bg-[#B5563C]/5 ring-2 ring-[#B5563C]' : 'border-[#E8DFD3] bg-white hover:border-[#B5563C]/40'}`}>
                           <span className="text-xs font-bold text-stone-900 block">{s.size}</span>
                           <span className="text-sm font-semibold text-[#2B241D] mt-1 block">₹{s.price}</span>
@@ -271,6 +283,7 @@ export default function ProductDetails() {
             </div>
           </div>
         </div>
+        <ProductGallery key={product.id} productId={product.id} />
         {product.description && (
           <section className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E8DFD3] shadow-subtle mb-12" aria-labelledby="product-description-heading">
             <h2 id="product-description-heading" className="font-serif font-bold text-xl sm:text-2xl text-[#2B241D] mb-4">

@@ -2649,7 +2649,7 @@ export default function HotDeals() {
 
                 Explore discounted products and combo packs from
 
-                ShreeKrishna Organics.
+                Shreekrishna Organics.
 
               </p>
 
