@@ -145,7 +145,7 @@ export default function Footer() {
 
       <div className="text-xs sm:text-[13px] leading-6 text-emerald-50/85">
         <p className="font-semibold text-white">
-          ShreeKrishna Organics 
+          Shreekrishna Organics 
         </p>
         <p>Karad, Maharashtra - 415110</p>
       </div>
@@ -253,7 +253,7 @@ export default function Footer() {
           <div className="border-t border-white/15 bg-[#004b3f]/35">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col lg:flex-row items-center justify-between gap-3 text-[11px] sm:text-xs text-emerald-50/75">
               <p className="text-center lg:text-left">
-                © 2026 ShreeKrishna Organics Pure Tradition, Naturally.
+                © 2026 Shreekrishna Organics Pure Tradition, Naturally.
               </p>
               <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-1">
                 <span>FSSAI Lic. No: 21519193000515</span>

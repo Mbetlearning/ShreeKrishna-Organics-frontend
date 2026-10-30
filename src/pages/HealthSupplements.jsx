@@ -1499,7 +1499,7 @@ export default function HealthSupplements() {
 
             >
 
-              ShreeKrishna Organics
+              Shreekrishna Organics
 
             </span>
 

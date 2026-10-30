@@ -67,7 +67,7 @@ export default function Contact() {
             We're Here to Help
           </span>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#2B241D]">
-            Get in Touch with ShreeKrishna Organics
+            Get in Touch with Shreekrishna Organics
           </h1>
           <p className="mt-2 text-sm text-stone-600 font-sans">
             Have questions regarding our wood-pressing methods, Vedic ghee, bulk orders, or your delivery? Reach out to our dedicated support team.
@@ -114,7 +114,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">Headquarters</h4>
-                    <p className="text-sm font-semibold text-stone-900 mt-0.5">ShreeKrishna Organics Pvt Ltd</p>
+                    <p className="text-sm font-semibold text-stone-900 mt-0.5">Shreekrishna Organics</p>
                     <p className="text-xs text-stone-500">Karad,Maharshtra-415110</p>
                   </div>
                 </div>

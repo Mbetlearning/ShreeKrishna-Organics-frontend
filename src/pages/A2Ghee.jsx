@@ -1218,7 +1218,7 @@ export default function A2Ghee() {
 
             <span className="text-[#efd27c] text-xs font-bold uppercase tracking-[0.18em]">
 
-              ShreeKrishna Organics
+              Shreekrishna Organics
 
             </span>
 
@@ -1476,7 +1476,7 @@ export default function A2Ghee() {
 
               <p className="mt-3 text-sm text-[#645338] max-w-xl mx-auto">
 
-                Explore the ShreeKrishna Organics A2 Ghee collection.
+                Explore the Shreekrishna Organics A2 Ghee collection.
 
               </p>
 
